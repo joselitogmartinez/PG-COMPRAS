@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import axios from 'axios';
+import logo from '../img/mspas.png';
+import TablaExpedientes from '../components/components_pag_presupuesto/TablaExpedientesPresupuesto';
+import ModalTraslado from '../components/ModalTraslado';
+import ModalCurAprobado from '../components/components_pag_presupuesto/ModalCurAprobado';
+
+const COLUMNAS_PRESUPUESTO = [
+  { name: 'no_identificacion', label: 'No' },
+  { name: 'modalidad', label: 'Modalidad' },
+  { name: 'descripcion_evento', label: 'Descripción Evento' },
+  { name: 'no_oc', label: 'No. O.C' },
+  { name: 'nit_adjudicado', label: 'NIT Adjudicado' },
+  { name: 'proveedor', label: 'Proveedor' },
+  { name: 'producto', label: 'Producto' },
+  { name: 'cantidad_adjudicada', label: 'Cantidad Adjudicada' },
+  { name: 'monto_total', label: 'Monto Total' },
+  { name: 'factura_numero', label: 'No. Factura' },
+  { name: 'cur_numero', label: 'No. CUR' },
+  { name: 'cur_aprobado', label: 'CUR Aprobado' }, // <-- Agregado aquí
+];
+
+const Presupuesto = () => {
+  const [rows, setRows] = useState([]);
+    const [filtros, setFiltros] = useState({
+    modalidad: '',
+    no_oc: '',
+    nit_adjudicado: '',
+    renglon: '',
+    cur_numero: ''
+    });
+  
+  const [hoveredRow, setHoveredRow] = useState(null);
+  const [showTraslado, setShowTraslado] = useState(false);
+  const [expedienteTraslado, setExpedienteTraslado] = useState(null);
+  const [showCurModal, setShowCurModal] = useState(false);
+  const [expedienteCur, setExpedienteCur] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchExpedientes = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/expedientes');
+        setRows(res.data);
+      } catch (err) {
+        setRows([]);
+      }
+    };
+    fetchExpedientes();
+  }, []);
+
+  // Protección por rol
+  useEffect(() => {
+    const rol = localStorage.getItem('rol');
+    if (rol !== 'presupuesto') {
+      navigate('/'); // Redirige al login si no es rol presupuesto
+    }
+  }, [navigate]);
+
+  // Filtros: No. O.C, NIT Adjudicado, Renglón, No. CUR
+const rowsFiltrados = rows.filter(row => {
+  if (row.areaActual !== 'presupuesto') return false; 
+  if (filtros.modalidad && row.modalidad !== filtros.modalidad) return false;
+  if (filtros.no_oc && !row.no_oc?.toLowerCase().includes(filtros.no_oc.toLowerCase())) return false;
+  if (filtros.nit_adjudicado && !row.nit_adjudicado?.toLowerCase().includes(filtros.nit_adjudicado.toLowerCase())) return false;
+  if (filtros.renglon && !row.renglon?.toLowerCase().includes(filtros.renglon.toLowerCase())) return false;
+  if (filtros.cur_numero && !row.cur_numero?.toLowerCase().includes(filtros.cur_numero.toLowerCase())) return false;
+  return true;
+});
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('rol');
+    navigate('/');
+  };
+
+  const handleAbrirTraslado = (expediente) => {
+    setExpedienteTraslado(expediente);
+    setShowTraslado(true);
+  };
+
+  const handleTrasladar = async (area) => {
+    if (!expedienteTraslado) return;
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/expedientes/trasladar/${expedienteTraslado._id}`,
+        { area }
+      );
+      setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
+      setShowTraslado(false);
+      setExpedienteTraslado(null);
+    } catch (err) {
+      alert('Error al trasladar expediente');
+    }
+  };
+
+  const handleAbrirCurModal = (expediente) => {
+    setExpedienteCur(expediente);
+    setShowCurModal(true);
+  };
+
+  const handleGuardarCurAprobado = async (curAprobado) => {
+    if (!expedienteCur) return;
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/expedientes/${expedienteCur._id}`,
+        { ...expedienteCur, cur_aprobado: curAprobado }
+      );
+      setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
+      setShowCurModal(false);
+      setExpedienteCur(null);
+    } catch (err) {
+      alert('Error al guardar CUR Aprobado');
+    }
+  };
+
+  return (
+    <div className="bg-white min-vh-100">
+      {/* Segundo encabezado (sin botones de reportes ni registrar) */}
+      <div className="px-4 py-0 bg-white border-bottom d-flex align-items-center justify-content-between">
+        <div className="d-flex align-items-center">
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
+          />
+          <h4 className="mb-0 fw-bold titulo-azul-marino">UNIDAD DE PRESUPUESTO</h4>
+        </div>
+        <button className="btn btn-outline-primary d-flex align-items-center" onClick={handleLogout}>
+          Cerrar Sesión
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="px-4 py-3 d-flex gap-3">
+        <select
+          className="form-select"
+          value={filtros.modalidad}
+          onChange={e => setFiltros({ ...filtros, modalidad: e.target.value })}
+          style={{ maxWidth: 200 }}
+        >
+          <option value="">Todas las Modalidades</option>
+          <option value="COMPRA DIRECTA">COMPRA DIRECTA</option>
+          <option value="CONTRATO ABIERTO">CONTRATO ABIERTO</option>
+          <option value="BAJA CUANTÍA">BAJA CUANTÍA</option>
+        </select>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="No. O.C"
+          value={filtros.no_oc}
+          onChange={e => setFiltros({ ...filtros, no_oc: e.target.value })}
+          style={{ maxWidth: 200 }}
+        />
+        <input
+          type="text"
+          className="form-control"
+          placeholder="NIT Proveedor"
+          value={filtros.nit_adjudicado}
+          onChange={e => setFiltros({ ...filtros, nit_adjudicado: e.target.value })}
+          style={{ maxWidth: 200 }}
+        />
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Renglón"
+          value={filtros.renglon}
+          onChange={e => setFiltros({ ...filtros, renglon: e.target.value })}
+          style={{ maxWidth: 200 }}
+        />
+        <input
+          type="text"
+          className="form-control"
+          placeholder="No. CUR"
+          value={filtros.cur_numero}
+          onChange={e => setFiltros({ ...filtros, cur_numero: e.target.value })}
+          style={{ maxWidth: 200 }}
+        />
+      </div>
+
+      {/* Tabla */}
+      <TablaExpedientes
+        camposTabla={COLUMNAS_PRESUPUESTO}
+        rowsFiltrados={rowsFiltrados}
+        hoveredRow={hoveredRow}
+        setHoveredRow={setHoveredRow}
+        handleModificar={() => {}}
+        handleAbrirTraslado={handleAbrirTraslado}
+        handleAbrirCurModal={handleAbrirCurModal} // <-- aquí
+      />
+      <ModalTraslado
+        show={showTraslado}
+        onClose={() => setShowTraslado(false)}
+        onTrasladar={handleTrasladar}
+      />
+      <ModalCurAprobado
+        show={showCurModal}
+        onClose={() => setShowCurModal(false)}
+        onSave={handleGuardarCurAprobado}
+        expediente={expedienteCur}
+      />
+    </div>
+  );
+};
+
+export default Presupuesto;

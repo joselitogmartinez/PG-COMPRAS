@@ -1,0 +1,196 @@
+/*------------------ESTILOS LOGIN---------------------*/
+
+/* Estilos generales para que el login este centrado  */   
+    .login-bg {
+    position: relative;
+    min-height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #1a227e4d; /* Azul marino */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+
+/*PARA QUE LA IMAGEN DE FONDO NO SE MUEVA CON EL SCROLL*/
+    .login-bg-img {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    object-fit: cover;
+    filter: blur(0.5px) brightness(0.7);
+    z-index: 1;
+    pointer-events: none;
+    }
+
+/* Estilos para el contenedor del formulario de login */
+    .login-container-custom {
+      position: relative;
+      z-index: 2;
+      background: #1a227e62;
+      padding: 2.5rem 2rem;
+      border-radius: 18px;
+      box-shadow: 0 4px 32px rgba(30,30,60,0.18);
+      min-width: 280px;
+      max-width: 350px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    
+/* Estilos para el formulario de login */
+    @media (max-width: 500px) {
+      .login-container-custom {
+        padding: 1.2rem 0.5rem;
+        min-width: 0;
+        max-width: 98vw;
+        border-radius: 10px;
+        width: 98vw;
+      }
+      .login-form-custom {
+        width: 100%;
+      }
+      .login-title-custom,
+      .login-title-custom-DDRISS {
+        font-size: 1.1rem;
+      }
+      .login-mspas-img {
+        max-width: 120px;
+      }
+      .login-input-custom,
+      .login-btn-custom {
+        font-size: 1rem;
+        padding: 0.7rem 0.7rem;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      .login-message-custom {
+        font-size: 0.95rem;
+        padding: 0.4rem 0.5rem;
+      }
+    }
+
+/* Estilos para el título del formulario de login */
+
+    .login-form-custom {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    }
+
+/*  estilos para el título del formulario de login */
+    .login-title-custom {
+    color: #ffffff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 2rem; /* Cambia el tamaño aquí */
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+    text-align: center;
+    }
+
+/*  Estilos para el título del formulario de login con DDRISS */
+    .login-title-custom-DDRISS {
+    color: #ffffff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 1rem; /* Cambia el tamaño aquí */
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+    text-align: center;
+    }
+/* Estilos para los campos del formulario de login */
+    .login-field-custom {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    }
+
+/* Estilos para las etiquetas del formulario de login */
+    .login-label-custom {
+    color: #fefefebd;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    }
+
+/* Estilos para los inputs del formulario de login */
+    .login-input-custom {
+        background: rgba(255, 255, 255, 0.08); /* Blanco translúcido */
+        border: 1px solid #fff;
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        font-size: 1.1rem;
+        color: #190466;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        box-shadow: 0 1px 4px rgba(30,30,60,0.08);
+        outline: none;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    
+ /* Cambia el color del placeholder o cuando pasa el mouse  */
+    .login-input-custom::placeholder {
+        color: #333;
+        opacity: 1;
+    }
+    
+/* Cambia el color del texto al escribir */
+    .login-input-custom:focus,
+    .login-input-custom:hover {
+        background: #fff; /* Se resalta a blanco */
+        box-shadow: 0 2px 8px #ffffff33;
+    }
+/*  Estilos para el input de contraseña */
+    .login-input-custom:focus {
+    box-shadow: 0 2px 8px #ffffff33;
+    }
+
+/* Estilos para el botón de login */
+    .login-btn-custom {
+    background: #ffffff5d;
+    color: #ffffff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 1.2rem; /* Cambia el tamaño aquí */
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    padding: 1rem 0;
+    margin-top: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    box-shadow: 0 2px 8px rgba(30,30,60,0.10);
+    }
+
+/* Cambia el color del botón al pasar el mouse o al hacer foco */
+    .login-btn-custom:hover, .login-btn-custom:focus {
+    background: #ffffff;
+    color: #0116f9;
+    }
+
+/* Estilos para el mensaje de error o información */
+    .login-message-custom {
+        margin-top: 0.5rem;
+        background: #fff3f3;
+        color: #d32f2f;
+        font-size: 1rem;
+        text-align: center;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        border: 1px solid #fd0000;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        box-shadow: 0 1px 4px #fd000033;
+        width: 100%;
+    }
+
+/* Estilos para la imagen del logo de MSPAS */
+.login-mspas-img {
+  max-width: 200px;
+  width: 100%;
+  height: auto;
+  margin: 0rem;
+  display: block;
+  /* Filtro para convertir azul a blanco */
+  filter: brightness(0) invert(1) drop-shadow(0 2px 8px #0002);
+}

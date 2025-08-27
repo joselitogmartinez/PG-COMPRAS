@@ -1,0 +1,44 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: fixed; /* Fuerza el body a quedarse fijo */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Estilos adicionales para mejorar la experiencia en tablas */
+.container-fluid {
+  overflow: hidden;
+}
+
+/* Asegura que los modales y popups sean visibles incluso con overflow:hidden */
+.modal-open {
+  overflow: hidden;
+  padding-right: 0 !important;
+}
+
+/* Asegura que la app ocupe exactamente el viewport */
+#root > div, .App {
+  height: 100%;
+  overflow: hidden;
+}
+  
