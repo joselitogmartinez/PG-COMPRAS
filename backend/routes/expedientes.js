@@ -14,6 +14,22 @@ router.get('/', async (req, res) => {
 
 // POST crear un expediente
 router.post('/', async (req, res) => {
+  // Convierte todos los campos de fecha a Date local
+  [
+    'fecha_publicacion',
+    'fecha_adjudicacion',
+    'fecha_cur',
+    'fecha_traslado_presupuesto',
+    'fecha_traslado_contabilidad',
+    'fecha_traslado_tesoreria',
+    'fecha_traslado_compras'
+    // agrega aquí todos los campos de fecha de tu modelo
+  ].forEach(field => {
+    if (req.body[field]) {
+      req.body[field] = new Date(req.body[field] + 'T00:00:00');
+    }
+  });
+
   // Crea el expediente con TODOS los datos recibidos
   const expediente = new Expediente(req.body);
 
@@ -27,6 +43,21 @@ router.post('/', async (req, res) => {
 
 //ACTUALIZAR expediente por ID
 router.put('/:id', async (req, res) => {
+  [
+    'fecha_publicacion',
+    'fecha_adjudicacion',
+    'fecha_cur',
+    'fecha_traslado_presupuesto',
+    'fecha_traslado_contabilidad',
+    'fecha_traslado_tesoreria',
+    'fecha_traslado_compras'
+    // agrega aquí todos los campos de fecha de tu modelo
+  ].forEach(field => {
+    if (req.body[field]) {
+      req.body[field] = new Date(req.body[field] + 'T00:00:00');
+    }
+  });
+
   try {
     const expedienteActualizado = await Expediente.findByIdAndUpdate(
       req.params.id,
@@ -51,12 +82,13 @@ router.delete('/:id', async (req, res) => {
 
 router.put('/trasladar/:id', async (req, res) => {
   const { area } = req.body;
+  // Usar minúsculas solo para buscar el campo de fecha
   const fechaCampo = {
     presupuesto: 'fecha_traslado_presupuesto',
     contabilidad: 'fecha_traslado_contabilidad',
     tesoreria: 'fecha_traslado_tesoreria',
     compras: 'fecha_traslado_compras'
-  }[area];
+  }[area ? area.toLowerCase() : ''];
 
   if (!fechaCampo) {
     return res.status(400).json({ message: 'Área no válida' });
@@ -64,7 +96,7 @@ router.put('/trasladar/:id', async (req, res) => {
 
   try {
     const update = {
-      areaActual: area,
+      areaActual: area, // Guarda en mayúsculas si así lo recibes
       [fechaCampo]: new Date()
     };
     const expediente = await Expediente.findByIdAndUpdate(

@@ -7,28 +7,8 @@ import TablaExpedientesAreas from '../components/components_pag_presupuesto/Tabl
 import ModalTraslado from '../components/ModalTraslado';
 import ModalAreas from '../components/components_pag_presupuesto/ModalAreas';
 
-const getColumnasPresupuesto = (row) => {
-  // Determinar qué campo usar para la primera columna según la modalidad
-  const campoNo = row.modalidad === 'COMPRA DIRECTA' ? 'no_identificacion' : 'no';
-  
-  return [
-    { name: campoNo, label: 'No' },
-    { name: 'modalidad', label: 'Modalidad' },
-    { name: 'descripcion_evento', label: 'Descripción Evento' },
-    { name: 'no_oc', label: 'No. O.C' },
-    { name: 'nit_adjudicado', label: 'NIT Adjudicado' },
-    { name: 'proveedor', label: 'Proveedor' },
-    { name: 'producto', label: 'Producto' },
-    { name: 'cantidad_adjudicada', label: 'Cantidad Adjudicada' },
-    { name: 'monto_total', label: 'Monto Total' },
-    { name: 'factura_numero', label: 'No. Factura' },
-    { name: 'cur_numero', label: 'No. CUR' },
-    { name: 'cur_aprobado', label: 'CUR Aprobado' },
-  ];
-};
-
-const COLUMNAS_PRESUPUESTO = [
-  { name: 'no_identificacion', label: 'No' }, // Por defecto
+const COLUMNAS_CONTABILIDAD = [
+  { name: 'no_identificacion', label: 'No' },
   { name: 'modalidad', label: 'Modalidad' },
   { name: 'descripcion_evento', label: 'Descripción Evento' },
   { name: 'no_oc', label: 'No. O.C' },
@@ -42,16 +22,17 @@ const COLUMNAS_PRESUPUESTO = [
   { name: 'cur_aprobado', label: 'CUR Aprobado' },
 ];
 
-const Presupuesto = () => {
+const EXTRA_FIELD_CONTABILIDAD = { name: 'cur_devengado', label: 'CUR Devengado' };
+
+const Contabilidad = () => {
   const [rows, setRows] = useState([]);
-    const [filtros, setFiltros] = useState({
+  const [filtros, setFiltros] = useState({
     modalidad: '',
     no_oc: '',
     nit_adjudicado: '',
     renglon: '',
     cur_numero: ''
-    });
-  
+  });
   const [hoveredRow, setHoveredRow] = useState(null);
   const [showTraslado, setShowTraslado] = useState(false);
   const [expedienteTraslado, setExpedienteTraslado] = useState(null);
@@ -74,21 +55,21 @@ const Presupuesto = () => {
   // Protección por rol
   useEffect(() => {
     const rol = localStorage.getItem('rol');
-    if (rol !== 'presupuesto') {
-      navigate('/'); // Redirige al login si no es rol presupuesto
+    if (rol !== 'contabilidad') {
+      navigate('/'); // Redirige al login si no es rol contabilidad
     }
   }, [navigate]);
 
   // Filtros: No. O.C, NIT Adjudicado, Renglón, No. CUR
-const rowsFiltrados = rows.filter(row => {
-  if (row.areaActual !== 'PRESUPUESTO') return false; 
-  if (filtros.modalidad && row.modalidad !== filtros.modalidad) return false;
-  if (filtros.no_oc && !row.no_oc?.toLowerCase().includes(filtros.no_oc.toLowerCase())) return false;
-  if (filtros.nit_adjudicado && !row.nit_adjudicado?.toLowerCase().includes(filtros.nit_adjudicado.toLowerCase())) return false;
-  if (filtros.renglon && !row.renglon?.toLowerCase().includes(filtros.renglon.toLowerCase())) return false;
-  if (filtros.cur_numero && !row.cur_numero?.toLowerCase().includes(filtros.cur_numero.toLowerCase())) return false;
-  return true;
-});
+  const rowsFiltrados = rows.filter(row => {
+    if (row.areaActual !== 'CONTABILIDAD') return false;
+    if (filtros.modalidad && row.modalidad !== filtros.modalidad) return false;
+    if (filtros.no_oc && !row.no_oc?.toLowerCase().includes(filtros.no_oc.toLowerCase())) return false;
+    if (filtros.nit_adjudicado && !row.nit_adjudicado?.toLowerCase().includes(filtros.nit_adjudicado.toLowerCase())) return false;
+    if (filtros.renglon && !row.renglon?.toLowerCase().includes(filtros.renglon.toLowerCase())) return false;
+    if (filtros.cur_numero && !row.cur_numero?.toLowerCase().includes(filtros.cur_numero.toLowerCase())) return false;
+    return true;
+  });
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -121,20 +102,6 @@ const rowsFiltrados = rows.filter(row => {
     setShowCurModal(true);
   };
 
-  const handleGuardarCurAprobado = async (curAprobado) => {
-    if (!expedienteCur) return;
-    try {
-      const res = await axios.put(
-        `http://localhost:5000/api/expedientes/${expedienteCur._id}`,
-        { cur_aprobado: curAprobado }
-      );
-      setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
-      setShowCurModal(false);
-      setExpedienteCur(null);
-    } catch (err) {
-      alert('Error al guardar CUR Aprobado');
-    }
-  };
 
   return (
     <div className="bg-white min-vh-100">
@@ -146,7 +113,7 @@ const rowsFiltrados = rows.filter(row => {
             alt="Logo"
             style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
           />
-          <h4 className="mb-0 fw-bold titulo-azul-marino">UNIDAD DE PRESUPUESTO</h4>
+          <h4 className="mb-0 fw-bold titulo-azul-marino">UNIDAD DE CONTABILIDAD</h4>
         </div>
         <button className="btn btn-outline-primary d-flex align-items-center" onClick={handleLogout}>
           Cerrar Sesión
@@ -202,13 +169,14 @@ const rowsFiltrados = rows.filter(row => {
 
       {/* Tabla */}
   <TablaExpedientesAreas
-        camposTabla={COLUMNAS_PRESUPUESTO}
+        camposTabla={COLUMNAS_CONTABILIDAD}
         rowsFiltrados={rowsFiltrados}
         hoveredRow={hoveredRow}
         setHoveredRow={setHoveredRow}
         handleModificar={() => {}}
         handleAbrirTraslado={handleAbrirTraslado}
-        handleAbrirCurModal={handleAbrirCurModal} // <-- aquí
+        handleAbrirCurModal={handleAbrirCurModal}
+        extraField={EXTRA_FIELD_CONTABILIDAD}
       />
       <ModalTraslado
         show={showTraslado}
@@ -218,11 +186,26 @@ const rowsFiltrados = rows.filter(row => {
   <ModalAreas
         show={showCurModal}
         onClose={() => setShowCurModal(false)}
-        onSave={handleGuardarCurAprobado}
+        onSave={async (valor) => {
+          if (!expedienteCur) return;
+          try {
+            const res = await axios.put(
+              `http://localhost:5000/api/expedientes/${expedienteCur._id}`,
+              { cur_devengado: valor }
+            );
+            setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
+            setShowCurModal(false);
+            setExpedienteCur(null);
+          } catch (err) {
+            alert('Error al guardar CUR Devengado');
+          }
+        }}
         expediente={expedienteCur}
+        fieldName="cur_devengado"
+        label="CUR Devengado"
       />
     </div>
   );
 };
 
-export default Presupuesto;
+export default Contabilidad;

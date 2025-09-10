@@ -56,7 +56,7 @@ const TablaExpedientes = ({
 
               let primeraCeldaClase = '';
               if (vacias >= 8) primeraCeldaClase = 'celda-roja';
-              else if (vacias > 0) primeraCeldaClase = 'celda-amarilla';
+              else if (vacias > 0 && vacias <= 8) primeraCeldaClase = 'celda-amarilla';
 
               // Determina la fecha de traslado según el área actual
               let fechaTraslado = '';

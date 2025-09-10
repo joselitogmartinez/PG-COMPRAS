@@ -9,10 +9,10 @@ const ModalTraslado = ({ show, onClose, onTrasladar }) => {
             <button type="button" className="btn-close" onClick={onClose}></button>
           </div>
           <div className="modal-body d-flex flex-column gap-2">
-            <button className="btn btn-primary" onClick={() => onTrasladar('compras')}>Compras</button>
-            <button className="btn btn-info" onClick={() => onTrasladar('presupuesto')}>Presupuesto</button>
-            <button className="btn btn-success" onClick={() => onTrasladar('contabilidad')}>Contabilidad</button>
-            <button className="btn btn-warning" onClick={() => onTrasladar('tesoreria')}>Tesorería</button>
+            <button className="btn btn-primary" onClick={() => onTrasladar('COMPRAS')}>Compras</button>
+            <button className="btn btn-info" onClick={() => onTrasladar('PRESUPUESTO')}>Presupuesto</button>
+            <button className="btn btn-success" onClick={() => onTrasladar('CONTABILIDAD')}>Contabilidad</button>
+            <button className="btn btn-warning" onClick={() => onTrasladar('TESORERIA')}>Tesorería</button>
           </div>
         </div>
       </div>

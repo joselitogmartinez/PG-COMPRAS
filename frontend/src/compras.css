@@ -1,0 +1,15 @@
+/* Hover y focus celeste para filtros */
+.form-control:hover, .form-control:focus,
+.form-select:hover, .form-select:focus {
+	border-color: #0a84fe !important;
+	box-shadow: 0 0 0 1.5px #b6e0fef8;
+	transform: scale(1.04);
+	font-weight: bold;
+	transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, font-weight 0.15s;
+}
+/* Cambia el color del encabezado de la página Compras */
+.compras-header {
+	background-color: #1a237e; /* Azul oscuro, puedes cambiar el color */
+	color: #fff;
+}
+

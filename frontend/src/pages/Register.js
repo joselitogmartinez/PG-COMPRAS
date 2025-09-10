@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../StylesRegistroUsuarios.css';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { FaSignInAlt, FaUserPlus, FaEdit, FaTrash } from 'react-icons/fa';
@@ -110,17 +111,8 @@ const Register = () => {
   return (
     <div className="bg-light min-vh-100">
       {/* Encabezado */}
-      <div className="d-flex align-items-center justify-content-between px-4 py-3" style={{ background: '#1a237e' }}>
-        <h3 className="text-white fw-bold mb-0">Usuarios</h3>
-        <button
-          className="btn btn-outline-light d-flex align-items-center"
-          style={{ opacity: 1, transition: 'opacity 0.2s' }}
-          onMouseOver={e => e.currentTarget.style.opacity = 0.7}
-          onMouseOut={e => e.currentTarget.style.opacity = 1}
-          onClick={() => navigate('/')}
-        >
-          Ir a Login <FaSignInAlt className="ms-2" />
-        </button>
+      <div className="d-flex align-items-center justify-content-center px-4 py-3">
+        <h3 className="fw-bold mb-0" style={{ color: '#1a237e' }}>Usuarios</h3>
       </div>
 
       {/* Botón Registrar */}

@@ -41,6 +41,7 @@ const expedienteSchema = new mongoose.Schema({
   cur_aprobado: String,
   cur_devengado: String,
   metodo_pago: String,          
+  tipo_pago: { type: String, default: '' }, // Quitar enum para permitir valores dinámicos como "CHEQUE 100-2025"
   fecha_pago: Date,
   pagado: { type: Boolean, default: false },
 
@@ -54,6 +55,7 @@ const expedienteSchema = new mongoose.Schema({
   realizado_por: String,
 
   // Baja
+  no: String,  // Campo "No" para BAJA CUANTÍA
   npg: String,
   no_acta: String
 });

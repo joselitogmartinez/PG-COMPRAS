@@ -1,0 +1,208 @@
+/* Estilos para el layout principal y sidebar */
+.dashboard-main {
+  display: flex;
+  min-height: 100vh;
+  padding-left: 200px;
+  transition: padding-left 0.3s;
+}
+.dashboard-main.sidebar-collapsed {
+  padding-left: 60px;
+}
+.dashboard-sidebar {
+  background: #222;
+  color: #fff;
+  width: 200px;
+  min-width: 60px;
+  transition: width 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: fixed;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+.dashboard-sidebar.collapsed {
+  width: 60px;
+}
+.sidebar-img {
+  padding: 1rem;
+  text-align: center;
+}
+.sidebar-img img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.sidebar-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.sidebar-item.active, .sidebar-item:hover {
+  background: #444;
+}
+.sidebar-icon {
+  font-size: 1.3rem;
+  margin-right: 1rem;
+}
+.dashboard-sidebar.collapsed .sidebar-label {
+  display: none;
+}
+.sidebar-toggle {
+  padding: 1rem;
+  cursor: pointer;
+  text-align: left;
+  color: #aaa;
+  font-size: 1.2rem;
+}
+.dashboard-content {
+  flex: 1;
+  padding: 0rem 2rem 2rem 2rem;
+  background: #f7f7f7;
+}
+
+/* Ajuste cuando el modal esté abierto */
+body.modal-open .dashboard-main {
+  padding-right: 24rem;
+  transition: padding-right 0.3s ease-in-out;
+}
+@media (max-width: 600px) {
+  .dashboard-main,
+  .dashboard-main.sidebar-collapsed {
+    padding-left: 0 !important;
+  }
+  .dashboard-sidebar {
+    flex-direction: row;
+    width: 100%;
+    min-width: 0;
+    height: 60px;
+    position: static;
+  }
+  .sidebar-img, .sidebar-toggle {
+    display: none;
+  }
+  .sidebar-menu {
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+  }
+  .dashboard-content {
+    padding: 1rem 0.5rem;
+  }
+}
+
+
+.sidebar-logout:hover {
+  background: rgba(255,255,255,0.7) !important;
+  color: #a00 !important;
+}
+
+/* Hover blanco opaco para los ítems del menú lateral */
+.sidebar-item:hover {
+  background: rgba(255,255,255,0.7) !important;
+}
+
+.dashboard-sidebar {
+  background: #0f1db6; /* azul marino oscuro */
+  color: #fff;
+  width: 200px;
+  min-width: 60px;
+  transition: width 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.sidebar-img {
+  padding: 0.5rem 0rem 0rem 0rem;
+  text-align: center;
+}
+
+/* Ajuste normal */
+.sidebar-img img {
+  width: 120px;
+  height: auto;
+  display: block;
+  margin: 5px auto;
+  transition: width 0.3s;
+  filter: brightness(0) invert(1) drop-shadow(0 2px 8px #0002);
+}
+
+/* Cuando el menú está colapsado */
+.dashboard-sidebar.collapsed .sidebar-img img {
+  width: 40px;
+}
+
+.sidebar-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.sidebar-item.active, .sidebar-item:hover {
+  background: #283593;
+  color: #fff;
+}
+
+.sidebar-icon {
+  font-size: 1.3rem;
+  margin-right: 1rem;
+}
+
+.sidebar-label {
+  font-weight: 500;
+}
+
+.sidebar-toggle {
+  padding: 1rem;
+  cursor: pointer;
+  text-align: left;
+  color: #aaa;
+  font-size: 1.2rem;
+}
+
+@media (max-width: 600px) {
+  .dashboard-sidebar {
+    width: 100vw;
+    min-width: 0;
+    height: 60px;
+    flex-direction: row;
+    position: static;
+  }
+  .sidebar-img {
+    display: none;
+  }
+  .sidebar-menu {
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+  }
+}
+

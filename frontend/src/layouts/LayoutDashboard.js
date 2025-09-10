@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import '../StylesLayoutDashboard.css'; 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaUsers,
   FaTachometerAlt,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaSignOutAlt
 } from 'react-icons/fa';
-import '../styleMenu.css';
 import mspastrans from '../img/mspastrans.png';
 
 const menuItems = [
@@ -15,9 +16,16 @@ const menuItems = [
 ];
 
 const LayoutDashboard = () => {
-  const [menuOpen, setMenuOpen] = useState(true);
+  // Por defecto colapsado
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('rol');
+    navigate('/');
+  };
 
   return (
     <div className={`dashboard-main${menuOpen ? '' : ' sidebar-collapsed'}`}>
@@ -42,6 +50,15 @@ const LayoutDashboard = () => {
             </div>
           ))}
         </nav>
+        {/* Botón cerrar sesión */}
+        <div
+          className="sidebar-item sidebar-logout"
+          onClick={handleLogout}
+          style={{ cursor: 'pointer', marginTop: 'auto', color: 'rgba(242, 237, 237, 1)', fontWeight: 'bold' }}
+        >
+          <span className="sidebar-icon"><FaSignOutAlt /></span>
+          {menuOpen && <span className="sidebar-label">Cerrar Sesión</span>}
+        </div>
         <div className="sidebar-toggle" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? <FaChevronLeft /> : <FaChevronRight />}
         </div>
@@ -54,4 +71,6 @@ const LayoutDashboard = () => {
   );
 };
 
+
 export default LayoutDashboard;
+

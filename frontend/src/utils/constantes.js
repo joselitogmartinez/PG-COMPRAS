@@ -10,7 +10,7 @@ export const CAMPOS_MODALIDAD = {
     { name: 'modalidad', label: 'Modalidad', type: 'text', disabled: true },
     { name: 'no_nog', label: 'NOG', type: 'text' },
     { name: 'fecha_publicacion', label: 'Fecha Publicación', type: 'date' },
-    { name: 'estatus_evento', label: 'Estatus Evento', type: 'text' },
+    { name: 'estatus_evento', label: 'Estatus Evento', type: 'select' },
     { name: 'fecha_adjudicacion', label: 'Fecha Adjudicación', type: 'date' },    
     { name: 'descripcion_evento', label: 'Descripción Evento', type: 'text' },
     { name: 'solicitud', label: 'No. Solicitud', type: 'text' },
@@ -53,7 +53,6 @@ export const CAMPOS_MODALIDAD = {
     { name: 'renglon', label: 'Renglón', type: 'text' },
     { name: 'codigo_insumo', label: 'Código Insumo', type: 'text' },
     { name: 'presentacion_unidad', label: 'Presentación/Unidad', type: 'text' },
-    { name: 'unidad_medida', label: 'Unidad de Medida', type: 'text' },
     { name: 'precio', label: 'Precio Unitario', type: 'number' },
     { name: 'cantidad_adjudicada', label: 'Cantidad Adjudicada', type: 'number' },
     { name: 'monto_total', label: 'Monto Total', type: 'number' },
@@ -109,6 +108,15 @@ export const COLUMNAS_TABLA = {
     ...CAMPOS_MODALIDAD.baja.filter(c => c.name !== 'no_acta' && c.name !== 'observaciones'),
   ]
 };
+
+// Opciones para el campo Estatus Evento
+export const OPCIONES_ESTATUS_EVENTO = [
+  'EN PROCESO',
+  'ADJUDICADO', 
+  'NO ADJUDICADO',
+  'PRESCINDIDO',
+  'DESIERTO'
+];
 
 // Utilidad para formato de fecha
 export function formatoFecha(fecha) {

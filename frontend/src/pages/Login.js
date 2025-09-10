@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
   import axios from 'axios';
   import lago from '../img/lago.png'; // Asegúrate de que la ruta sea correcta
   import mspastrans from '../img/mspastrans.png'; // Asegúrate de que la ruta sea correcta
-
+  import '../stylesLogin.css';
   const Login = () => {
     const [formulario, setFormulario] = useState({
       email: '',
@@ -32,6 +32,10 @@ import { useNavigate } from 'react-router-dom';
           navigate('/compras');
         } else if (res.data.usuario.rol === 'presupuesto') {
           navigate('/presupuesto');
+        } else if (res.data.usuario.rol === 'contabilidad') {
+          navigate('/contabilidad');
+        } else if (res.data.usuario.rol === 'tesoreria') {
+          navigate('/tesoreria');
         } else {
           navigate('/dashboard');
         }

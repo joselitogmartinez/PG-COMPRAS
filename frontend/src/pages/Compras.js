@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
   import { useNavigate } from 'react-router-dom';
-  import { FaSignOutAlt, FaPlus } from 'react-icons/fa';
+  import { FaSignOutAlt, FaPlus, FaSearch } from 'react-icons/fa';
   import 'bootstrap/dist/css/bootstrap.min.css';
   import axios from 'axios';
   import * as XLSX from 'xlsx';
@@ -8,6 +8,8 @@ import React, { useState, useEffect } from 'react';
   import jsPDF from 'jspdf';
   import autoTable from 'jspdf-autotable';
   import logo from '../img/mspas.png';
+  import '../compras.css';
+  
 
   import { MODALIDADES, CAMPOS_MODALIDAD, COLUMNAS_TABLA } from '../utils/constantes';
   import Filtros from '../components/components_pag_compras/Filtros';
@@ -41,7 +43,8 @@ import React, { useState, useEffect } from 'react';
     const [showTraslado, setShowTraslado] = useState(false);
     const [showMensaje, setShowMensaje] = useState(false);
     const [expedienteTraslado, setExpedienteTraslado] = useState(null);
-    //const navigate = useNavigate();
+  // Buscador general
+  const [busqueda, setBusqueda] = useState("");
 
     useEffect(() => {
       const fetchExpedientes = async () => {
@@ -118,9 +121,23 @@ import React, { useState, useEffect } from 'react';
             ...form,
             modalidad: MODALIDADES.find(m => m.key === modalidad).label
           });
-          setMensaje('Expediente registrado exitosamente. Puedes seguir agregando.');
-          setShowMensaje(true); 
-          // setTimeout(() => setMensaje(''), 1200); // Puedes quitar este timeout
+          setMensaje('¡Expediente Guardado! Puedes seguir agregando.');
+          setShowMensaje(true);
+          
+          // Limpiar todos los campos del formulario después de guardar
+          const formLimpio = {};
+          CAMPOS_MODALIDAD[modalidad].forEach(campo => {
+            if (campo.type === 'checkbox') {
+              formLimpio[campo.name] = false;
+            } else if (campo.type === 'number') {
+              formLimpio[campo.name] = '';
+            } else {
+              formLimpio[campo.name] = '';
+            }
+          });
+          // Mantener la modalidad seleccionada
+          formLimpio.modalidad = MODALIDADES.find(m => m.key === modalidad).label;
+          setForm(formLimpio);
         }
       } catch (err) {
         setMensaje('Error al guardar expediente');
@@ -133,7 +150,14 @@ import React, { useState, useEffect } from 'react';
     };
 
     const handleModificar = (row) => {
-      setForm(row);
+      // Suponiendo que expediente es el objeto a editar
+      const expedienteEdit = { ...row };
+      Object.keys(expedienteEdit).forEach(key => {
+        if (key.includes('fecha') && expedienteEdit[key]) {
+          expedienteEdit[key] = expedienteEdit[key].slice(0, 10);
+        }
+      });
+      setForm(expedienteEdit);
       setMensaje('');
       setEditando(true);
       setExpedienteId(row._id);
@@ -159,32 +183,53 @@ import React, { useState, useEffect } from 'react';
       setForm({});
     };
 
-    // Filtra por modalidad y otros filtros
+    // Filtra por modalidad, filtros y búsqueda solo en descripción del producto
     const rowsFiltrados = rows.filter(row => {
       if (row.modalidad !== MODALIDADES.find(m => m.key === modalidad).label) return false;
-
       const finalizadoFiltro = filtros.finalizado;
-
+      // Filtros específicos
       if (modalidad === 'directa') { 
         if (filtros.estado_evento && !row.estatus_evento?.toLowerCase().includes(filtros.estado_evento.toLowerCase())) return false;
         if (filtros.nit_adjudicado && !row.nit_adjudicado?.toLowerCase().includes(filtros.nit_adjudicado.toLowerCase())) return false;
         if (filtros.no_nog && !row.no_nog?.toLowerCase().includes(filtros.no_nog.toLowerCase())) return false;
         if (filtros.no_identificacion && !row.no_identificacion?.toLowerCase().includes(filtros.no_identificacion.toLowerCase())) return false;
         if (filtros.renglon && !row.renglon?.toLowerCase().includes(filtros.renglon.toLowerCase())) return false;
-        if (filtros.areaActual && row.areaActual !== filtros.areaActual) return false;
+        if (filtros.solicitud && !row.solicitud?.toLowerCase().includes(filtros.solicitud.toLowerCase())) return false;
+        if (filtros.no_oc && !row.no_oc?.toLowerCase().includes(filtros.no_oc.toLowerCase())) return false;
+        if (filtros.areaActual && row.areaActual && row.areaActual !== filtros.areaActual) return false;
         if (finalizadoFiltro !== undefined && finalizadoFiltro !== '') {
           const valorFinalizado = Boolean(row.finalizado);
           if (valorFinalizado !== (finalizadoFiltro === 'true')) return false;
         }
       }
-      if (modalidad === 'abierto' || modalidad === 'baja') { // <-- key, no label
+      if (modalidad === 'abierto') {
         if (filtros.nit_adjudicado && !row.nit_adjudicado?.toLowerCase().includes(filtros.nit_adjudicado.toLowerCase())) return false;
         if (filtros.no_nog && !row.no_nog?.toLowerCase().includes(filtros.no_nog.toLowerCase())) return false;
         if (filtros.renglon && !row.renglon?.toLowerCase().includes(filtros.renglon.toLowerCase())) return false;
+        if (filtros.solicitud && !row.solicitud?.toLowerCase().includes(filtros.solicitud.toLowerCase())) return false;
+        if (filtros.no_oc && !row.no_oc?.toLowerCase().includes(filtros.no_oc.toLowerCase())) return false;
+        if (filtros.areaActual && row.areaActual && row.areaActual !== filtros.areaActual) return false;
         if (finalizadoFiltro !== undefined && finalizadoFiltro !== '') {
           const valorFinalizado = Boolean(row.finalizado);
           if (valorFinalizado !== (finalizadoFiltro === 'true')) return false;
         }
+      }
+      if (modalidad === 'baja') {
+        if (filtros.nit_adjudicado && !row.nit_adjudicado?.toLowerCase().includes(filtros.nit_adjudicado.toLowerCase())) return false;
+        if (filtros.npg && !row.npg?.toLowerCase().includes(filtros.npg.toLowerCase())) return false;
+        if (filtros.renglon && !row.renglon?.toLowerCase().includes(filtros.renglon.toLowerCase())) return false;
+        if (filtros.solicitud && !row.solicitud?.toLowerCase().includes(filtros.solicitud.toLowerCase())) return false;
+        if (filtros.no_oc && !row.no_oc?.toLowerCase().includes(filtros.no_oc.toLowerCase())) return false;
+        if (filtros.areaActual && row.areaActual && row.areaActual !== filtros.areaActual) return false;
+        if (finalizadoFiltro !== undefined && finalizadoFiltro !== '') {
+          const valorFinalizado = Boolean(row.finalizado);
+          if (valorFinalizado !== (finalizadoFiltro === 'true')) return false;
+        }
+      }
+      // Búsqueda solo en descripción del producto (campo 'producto')
+      if (busqueda.trim() !== "") {
+        const texto = busqueda.trim().toLowerCase();
+        if (!(row['producto'] || "").toString().toLowerCase().includes(texto)) return false;
       }
       return true;
     });
@@ -310,12 +355,12 @@ import React, { useState, useEffect } from 'react';
     return (
       <div className="bg-white min-vh-100">
         {/* Encabezado con pestañas y cerrar sesión */}
-        <div className="d-flex align-items-center justify-content-between px-4 py-3 border-bottom bg-primary">
+        <div className="d-flex align-items-center justify-content-between px-4 py-3 border-bottom compras-header">
           <ul className="nav nav-tabs border-0">
             {MODALIDADES.map(m => (
               <li className="nav-item" key={m.key}>
                 <button
-                  className={`nav-link text-uppercase fw-bold ${modalidad === m.key ? 'active text-primary bg-white' : 'text-white bg-primary'}`}
+                  className={`nav-link text-uppercase fw-bold compras-header ${modalidad === m.key ? 'active text-primary bg-white' : 'text-white compras-header'}`}
                   style={{ border: 'none', borderRadius: '0.5rem 0.5rem 0 0' }}
                   onClick={() => setModalidad(m.key)}
                 >
@@ -342,7 +387,20 @@ import React, { useState, useEffect } from 'react';
               alt="Logo"
               style={{ height: '100px', width: 'auto', marginRight: 'px', objectFit: 'contain' }}
             />
-            <h4 className="mb-0 fw-bold titulo-azul-marino">UNIDAD DE COMPRAS</h4>
+            <h4 className="mb-0 fw-bold titulo-azul-marino me-3">UNIDAD DE COMPRAS</h4>
+            <div className="input-group" style={{ width: 320 }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Buscar producto"
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                style={{ borderRight: 0 }}
+              />
+              <span className="input-group-text bg-white" style={{ borderLeft: 0 }}>
+                <FaSearch />
+              </span>
+            </div>
           </div>
           <div>
             <button className="btn btn-primary fw-bold me-3 btn-lg px-4 py-1" onClick={handleRegistrar}>
@@ -392,6 +450,7 @@ import React, { useState, useEffect } from 'react';
           handleModificar={handleModificar}
           handleEliminar={handleEliminar}
           handleAbrirTraslado={handleAbrirTraslado}
+          modalidad={modalidad}
         />
       </div>
     );

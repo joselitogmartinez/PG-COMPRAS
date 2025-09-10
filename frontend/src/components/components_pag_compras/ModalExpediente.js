@@ -1,5 +1,6 @@
 import React from 'react';
-  import { MODALIDADES, CAMPOS_MODALIDAD } from '../../utils/constantes';
+import '../../ModalExpediente.css';
+  import { MODALIDADES, CAMPOS_MODALIDAD, OPCIONES_ESTATUS_EVENTO } from '../../utils/constantes';
 
 
   const ModalExpediente = ({
@@ -12,10 +13,67 @@ import React from 'react';
     editando,
     mensaje,
     showMensaje,
-    setShowMensaje,
-    handleChange
+    setShowMensaje
   }) => {
     if (!show) return null;
+    const handleChange = (e) => {
+      const { name, type, checked, value } = e.target;
+
+      if (name === 'finalizado' && checked) {
+        setForm(prevForm => {
+          const nuevoForm = { ...prevForm };
+
+          CAMPOS_MODALIDAD[modalidad].forEach(campo => {
+            const campoNombre = campo.name;
+            const campoValor = nuevoForm[campoNombre];
+
+            // Si el campo está vacío o no definido
+            if (!campoValor || campoValor === '') {
+              if (campo.type === 'date') {
+                // Fecha actual local
+                nuevoForm[campoNombre] = getLocalDateString();
+              } else if (campo.type === 'number') {
+                // Cualquier campo numérico
+                nuevoForm[campoNombre] = 0;
+              } else {
+                nuevoForm[campoNombre] = 'N/A';
+              }
+            }
+          });
+
+          nuevoForm.finalizado = true;
+          return nuevoForm;
+        });
+      } else if (type === 'checkbox') {
+        setForm(prevForm => ({
+          ...prevForm,
+          [name]: checked
+        }));
+      } else {
+        // Si el usuario cambia precio o cantidad_adjudicada, recalcula monto_total
+        if (name === 'precio' || name === 'cantidad_adjudicada') {
+          setForm(prevForm => {
+            const nuevoValor = value;
+            let precio = name === 'precio' ? parseFloat(nuevoValor) : parseFloat(prevForm.precio || 0);
+            let cantidad = name === 'cantidad_adjudicada' ? parseFloat(nuevoValor) : parseFloat(prevForm.cantidad_adjudicada || 0);
+            let monto_total = prevForm.monto_total;
+            if (!isNaN(precio) && !isNaN(cantidad)) {
+              monto_total = (precio * cantidad).toFixed(2);
+            }
+            return {
+              ...prevForm,
+              [name]: nuevoValor,
+              monto_total
+            };
+          });
+        } else {
+          setForm(prevForm => ({
+            ...prevForm,
+            [name]: value
+          }));
+        }
+      }
+    };
     return (
       <div
         className="modal fade show d-block"
@@ -76,7 +134,22 @@ import React from 'react';
                       return (
                         <div key={campo.name} className={colClass}>
                           <label className="form-label">{campo.label}</label>
-                          {campo.type === 'textarea' ? (
+                          {campo.name === 'monto_total' ? (
+                            <input
+                              className={`form-control ${claseVacio}`}
+                              type="text"
+                              name={campo.name}
+                              value={(() => {
+                                const precio = parseFloat(form.precio || 0);
+                                const cantidad = parseFloat(form.cantidad_adjudicada || 0);
+                                if (!isNaN(precio) && !isNaN(cantidad)) {
+                                  return `Q ${(precio * cantidad).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                }
+                                return '';
+                              })()}
+                              readOnly
+                            />
+                          ) : campo.type === 'textarea' ? (
                             <textarea
                               className={`form-control ${claseVacio}`}
                               name={campo.name}
@@ -93,7 +166,7 @@ import React from 'react';
                                 name={campo.name}
                                 checked={!!form[campo.name]}
                                 onChange={handleChange}
-                                disabled={campo.disabled}
+                                disabled={campo.disabled || (campo.name === 'finalizado' && editando && form.areaActual !== 'COMPRAS')}
                                 id={campo.name}
                               />
                               <label className="form-check-label" htmlFor={campo.name}></label>
@@ -111,6 +184,19 @@ import React from 'react';
                               <option value="COMPRA DIRECTA">COMPRA DIRECTA</option>
                               <option value="CONTRATO ABIERTO">CONTRATO ABIERTO</option>
                               <option value="BAJA CUANTÍA">BAJA CUANTÍA</option>
+                            </select>
+                          ) : campo.name === 'estatus_evento' ? (
+                            <select
+                              className={`form-select ${claseVacio}`}
+                              name="estatus_evento"
+                              value={form.estatus_evento || ''}
+                              onChange={handleChange}
+                              disabled={editando && form.areaActual !== 'COMPRAS'}
+                            >
+                              <option value="">Seleccione estatus</option>
+                              {OPCIONES_ESTATUS_EVENTO.map((opcion, index) => (
+                                <option key={index} value={opcion}>{opcion}</option>
+                              ))}
                             </select>
                           ) : (
                             <input
@@ -181,8 +267,23 @@ import React from 'react';
             </form>
           </div>
         </div>
+        <div className="acciones-fila">
+          {form.finalizado === true && (
+            <button>{/* Botón enviar */}</button>
+          )}
+          {form.areaActual === 'COMPRAS' && (
+            <button>{/* Botón borrar */}</button>
+          )}
+        </div>
       </div>
     );
   };
+
+  function getLocalDateString() {
+    const today = new Date();
+    const offset = today.getTimezoneOffset();
+    const localDate = new Date(today.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 10);
+  }
 
   export default ModalExpediente;
