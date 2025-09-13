@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
   import React, { useState } from 'react';
   import axios from 'axios';
+  import { apiUrl } from '../utils/api';
   import lago from '../img/lago.png'; // Asegúrate de que la ruta sea correcta
   import mspastrans from '../img/mspastrans.png'; // Asegúrate de que la ruta sea correcta
   import '../stylesLogin.css';
@@ -25,7 +26,7 @@ import { useNavigate } from 'react-router-dom';
       e.preventDefault();
       setMensaje('');
       try {
-  const res = await axios.post('http://localhost:5000/api/auth/login', formulario);
+  const res = await axios.post(apiUrl('/api/auth/login'), formulario);
         setMensaje('Login exitoso');
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('rol', res.data.usuario.rol);

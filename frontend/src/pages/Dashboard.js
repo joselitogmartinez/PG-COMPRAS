@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
+import { apiUrl } from '../utils/api';
 import { MODALIDADES, COLUMNAS_TABLA } from '../utils/constantes';
 import ModalReporte from '../components/components_pag_compras/ModalReporte';
 import jsPDF from 'jspdf';
@@ -42,7 +43,7 @@ const Dashboard = () => {
     let mounted = true;
     const fetchExpedientes = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/expedientes');
+  const res = await axios.get(apiUrl('/api/expedientes'));
         if (mounted) setExpedientes(res.data);
       } catch (err) {
         if (mounted) setExpedientes([]);

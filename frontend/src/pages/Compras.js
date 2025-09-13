@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
   import { FaSignOutAlt, FaPlus, FaSearch } from 'react-icons/fa';
   import 'bootstrap/dist/css/bootstrap.min.css';
   import axios from 'axios';
+  import { apiUrl } from '../utils/api';
   // XLSX no longer used; Excel export via exceljs with dynamic import
   import jsPDF from 'jspdf';
   import autoTable from 'jspdf-autotable';
@@ -49,7 +50,7 @@ import React, { useState, useEffect } from 'react';
     useEffect(() => {
       const fetchExpedientes = async () => {
         try {
-          const res = await axios.get('http://localhost:5000/api/expedientes');
+          const res = await axios.get(apiUrl('/api/expedientes'));
           setRows(res.data); // Carga todos los expedientes
         } catch (err) {
           setRows([]);
@@ -107,7 +108,7 @@ import React, { useState, useEffect } from 'react';
       setMensaje('');
       try {
         if (editando && expedienteId) {
-          await axios.put(`http://localhost:5000/api/expedientes/${expedienteId}`, {
+          await axios.put(apiUrl(`/api/expedientes/${expedienteId}`), {
             ...form,
             modalidad: MODALIDADES.find(m => m.key === modalidad).label
           });
@@ -117,7 +118,7 @@ import React, { useState, useEffect } from 'react';
           setEditando(false);
           setExpedienteId(null);
         } else {
-          await axios.post('http://localhost:5000/api/expedientes', {
+          await axios.post(apiUrl('/api/expedientes'), {
             ...form,
             modalidad: MODALIDADES.find(m => m.key === modalidad).label
           });
@@ -167,7 +168,7 @@ import React, { useState, useEffect } from 'react';
     const handleEliminar = async (row) => {
       if (window.confirm('¿Está seguro que desea eliminar este expediente?')) {
         try {
-          await axios.delete(`http://localhost:5000/api/expedientes/${row._id}`);
+          await axios.delete(apiUrl(`/api/expedientes/${row._id}`));
           setRows(prevRows => prevRows.filter(r => r._id !== row._id));
         } catch (err) {
           alert('Error al eliminar el expediente');
@@ -474,7 +475,7 @@ import React, { useState, useEffect } from 'react';
       if (!expedienteTraslado) return;
       try {
         const res = await axios.put(
-          `http://localhost:5000/api/expedientes/trasladar/${expedienteTraslado._id}`,
+          apiUrl(`/api/expedientes/trasladar/${expedienteTraslado._id}`),
           { area }
         );
         setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));

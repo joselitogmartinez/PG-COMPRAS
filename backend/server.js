@@ -8,9 +8,11 @@ dotenv.config();
 connectDB();
 
 const app = express();
+// CORS: permitir localhost en dev y un origen configurable en producción
+const allowedOrigin = process.env.CORS_ORIGIN || '*';
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
+  origin: allowedOrigin,
+  credentials: false
 }));
 
 app.use(express.json());

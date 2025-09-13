@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
     import { useNavigate } from 'react-router-dom';
     import 'bootstrap/dist/css/bootstrap.min.css';
     import axios from 'axios';
+    import { apiUrl } from '../utils/api';
     import logo from '../img/mspas.png';
     import TablaExpedientesAreas from '../components/components_pag_presupuesto/TablaExpedientesAreas';
     import ModalPagado from '../components/components_pag_presupuesto/ModalPagado';
@@ -49,7 +50,7 @@ import React, { useState, useEffect } from 'react';
     useEffect(() => {
         const fetchExpedientes = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/expedientes');
+            const res = await axios.get(apiUrl('/api/expedientes'));
             setRows(res.data);
         } catch (err) {
             setRows([]);
@@ -93,7 +94,7 @@ import React, { useState, useEffect } from 'react';
         if (!expedienteTraslado) return;
         try {
         const res = await axios.put(
-            `http://localhost:5000/api/expedientes/trasladar/${expedienteTraslado._id}`,
+            apiUrl(`/api/expedientes/trasladar/${expedienteTraslado._id}`),
             { area }
         );
         setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
@@ -218,7 +219,7 @@ import React, { useState, useEffect } from 'react';
                     if (confirmar) {
                         try {
                             const res = await axios.put(
-                                `http://localhost:5000/api/expedientes/${row._id}`,
+                                apiUrl(`/api/expedientes/${row._id}`),
                                 {
                                     pagado: false,
                                     tipo_pago: '',
@@ -253,7 +254,7 @@ import React, { useState, useEffect } from 'react';
                         }
                     });
                     const res = await axios.put(
-                        `http://localhost:5000/api/expedientes/${expedientePagado._id}`,
+                        apiUrl(`/api/expedientes/${expedientePagado._id}`),
                         dataUpper
                     );
                     setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
@@ -277,7 +278,7 @@ import React, { useState, useEffect } from 'react';
             try {
                 // Guardar el valor en mayúsculas
                 const res = await axios.put(
-                    `http://localhost:5000/api/expedientes/${expedienteCur._id}`,
+                    apiUrl(`/api/expedientes/${expedienteCur._id}`),
                     { cur_devengado: valor.toUpperCase() }
                 );
                 setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
