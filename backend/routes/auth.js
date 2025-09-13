@@ -7,21 +7,15 @@ const router = express.Router();
 
 // REGISTRO
 router.post('/register', async (req, res) => {
-  const { nombre, email, contraseña, rol } = req.body;
+  const { nombre, usuario, email, contraseña, rol } = req.body;
   try {
-    const usuarioExistente = await Usuario.findOne({ email });
-    if (usuarioExistente) return res.status(400).json({ mensaje: 'El usuario ya existe' });
+    const usuarioExistente = await Usuario.findOne({ usuario });
+    if (usuarioExistente) return res.status(400).json({ mensaje: 'El nombre de usuario ya existe' });
 
     const salt = await bcrypt.genSalt(10);
     const passwordEncriptado = await bcrypt.hash(contraseña, salt);
 
-    const nuevoUsuario = new Usuario({
-      nombre,
-      email,
-      contraseña: passwordEncriptado,
-      rol,
-      activo: true
-    });
+  const nuevoUsuario = new Usuario({ nombre, usuario, email, contraseña: passwordEncriptado, rol, activo: true });
 
     await nuevoUsuario.save();
     res.status(201).json({ mensaje: 'Usuario registrado con éxito' });
@@ -33,6 +27,14 @@ router.post('/register', async (req, res) => {
 
 router.delete('/usuarios/:id', async (req, res) => {
   try {
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    if (usuario.rol === 'admin') {
+      const adminsActivos = await Usuario.countDocuments({ rol: 'admin' });
+      if (adminsActivos <= 1) {
+        return res.status(400).json({ mensaje: 'No se puede eliminar el único administrador.' });
+      }
+    }
     await Usuario.findByIdAndDelete(req.params.id);
     res.json({ mensaje: 'Usuario eliminado' });
   } catch (error) {
@@ -43,15 +45,27 @@ router.delete('/usuarios/:id', async (req, res) => {
 
 // Editar usuario
 router.put('/usuarios/:id', async (req, res) => {
-  const { nombre, email, contraseña, rol } = req.body;
-  const datosActualizados = { nombre, email, rol };
+  const { nombre, usuario, email, contraseña, rol } = req.body;
+  const datosActualizados = { nombre, usuario, email };
+  try {
+    const existente = await Usuario.findById(req.params.id);
+    if (!existente) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    // Impedir cambiar rol si el usuario es admin (rol inmutable)
+    if (rol && existente.rol === 'admin' && rol !== 'admin') {
+      return res.status(400).json({ mensaje: 'El rol del usuario administrador no puede cambiarse.' });
+    } else if (rol) {
+      datosActualizados.rol = rol;
+    }
 
-  if (contraseña) {
-    datosActualizados.contraseña = await bcrypt.hash(contraseña, 10);
+    if (contraseña) {
+      datosActualizados.contraseña = await bcrypt.hash(contraseña, 10);
+    }
+
+    await Usuario.findByIdAndUpdate(req.params.id, datosActualizados);
+    res.json({ mensaje: 'Usuario actualizado' });
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al actualizar usuario' });
   }
-
-  await Usuario.findByIdAndUpdate(req.params.id, datosActualizados);
-  res.json({ mensaje: 'Usuario actualizado' });
 });
 
 // Activar/Inactivar usuario
@@ -82,7 +96,7 @@ router.patch('/usuarios/:id', async (req, res) => {
 // Obtener todos los usuarios
 router.get('/usuarios', async (req, res) => {
   try {
-    const usuarios = await Usuario.find().select('-contraseña');
+  const usuarios = await Usuario.find().select('-contraseña');
     res.json(usuarios);
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al obtener usuarios' });
@@ -91,8 +105,12 @@ router.get('/usuarios', async (req, res) => {
 
 // LOGIN
 router.post('/login', async (req, res) => {
-  const { email, contraseña } = req.body;
-  const usuario = await Usuario.findOne({ email });
+  const { usuario: usuarioLogin, contraseña } = req.body;
+  let usuario = await Usuario.findOne({ usuario: usuarioLogin });
+  // Fallback para cuentas legado que usaban email como usuario
+  if (!usuario) {
+    usuario = await Usuario.findOne({ email: usuarioLogin });
+  }
   if (!usuario) return res.status(400).json({ mensaje: 'Usuario no encontrado' });
   if (!usuario.activo) return res.status(401).json({ mensaje: 'Usuario inactivo' });
   const validPassword = await bcrypt.compare(contraseña, usuario.contraseña);

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import '../StylesRegistroUsuarios.css';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { FaSignInAlt, FaUserPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaUserPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Register = () => {
   const [formulario, setFormulario] = useState({
     nombre: '',
-    email: '',
+    usuario: '',
     contraseña: '',
     rol: 'compras'
   });
@@ -18,7 +17,7 @@ const Register = () => {
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
-  const navigate = useNavigate();
+  // ...
 
   useEffect(() => {
     obtenerUsuarios();
@@ -26,7 +25,7 @@ const Register = () => {
 
   const obtenerUsuarios = async () => {
     try {
-      const respuesta = await axios.get('http://localhost:5000/api/auth/usuarios');
+  const respuesta = await axios.get('http://localhost:5000/api/auth/usuarios');
       setUsuarios(respuesta.data);
     } catch (error) {
       console.error('Error al obtener usuarios', error);
@@ -47,16 +46,17 @@ const Register = () => {
       if (editando && usuarioSeleccionado) {
         await axios.put(`http://localhost:5000/api/auth/usuarios/${usuarioSeleccionado._id}`, {
           nombre: formulario.nombre,
-          email: formulario.email,
+          usuario: formulario.usuario,
           contraseña: formulario.contraseña ? formulario.contraseña : undefined,
-          rol: formulario.rol
+          // Si el seleccionado es admin, no enviar cambio de rol para bloquear modificación
+          ...(usuarioSeleccionado.rol === 'admin' ? {} : { rol: formulario.rol })
         });
         setMensaje('Usuario actualizado correctamente');
       } else {
-        await axios.post('http://localhost:5000/api/auth/register', formulario);
+  await axios.post('http://localhost:5000/api/auth/register', formulario);
         setMensaje('Usuario registrado correctamente');
       }
-      setFormulario({ nombre: '', email: '', contraseña: '', rol: 'compras' });
+  setFormulario({ nombre: '', usuario: '', contraseña: '', rol: 'compras' });
       setShowModal(false);
       setEditando(false);
       setUsuarioSeleccionado(null);
@@ -80,7 +80,7 @@ const Register = () => {
   const handleEditarUsuario = (usuario) => {
     setFormulario({
       nombre: usuario.nombre,
-      email: usuario.email,
+      usuario: usuario.usuario,
       contraseña: '', // Por seguridad, no mostrar la contraseña
       rol: usuario.rol
     });
@@ -138,7 +138,7 @@ const Register = () => {
               <thead className="table-primary">
                 <tr>
                   <th>Nombre</th>
-                  <th>Correo</th>
+                  <th>Usuario</th>
                   <th>Rol</th>
                   <th>Estado</th>
                 </tr>
@@ -147,7 +147,7 @@ const Register = () => {
                 {usuarios.map((usuario) => (
                   <tr key={usuario._id}>
                     <td>{usuario.nombre}</td>
-                    <td>{usuario.email}</td>
+                    <td>{usuario.usuario || usuario.email}</td>
                     <td>{usuario.rol}</td>
                     <td>
                       <label className="switch-ios">
@@ -192,14 +192,14 @@ const Register = () => {
                   <h5 className="modal-title">{editando ? 'Editar Usuario' : 'Registrar Usuario'}</h5>
                   <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                 </div>
-                <div className="modal-body">
+        <div className="modal-body">
                   <div className="mb-3">
                     <label className="form-label">Nombre:</label>
                     <input type="text" name="nombre" className="form-control" value={formulario.nombre} onChange={handleChange} required />
                   </div>
                   <div className="mb-3">
-                    <label className="form-label">Correo:</label>
-                    <input type="email" name="email" className="form-control" value={formulario.email} onChange={handleChange} required />
+          <label className="form-label">Usuario:</label>
+          <input type="text" name="usuario" className="form-control" value={formulario.usuario} onChange={handleChange} required />
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Contraseña:</label>
@@ -214,13 +214,16 @@ const Register = () => {
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Rol:</label>
-                    <select name="rol" className="form-select" value={formulario.rol} onChange={handleChange}>
+          <select name="rol" className="form-select" value={formulario.rol} onChange={handleChange} disabled={editando && usuarioSeleccionado?.rol === 'admin'}>
                       <option value="admin">Administrador</option>
                       <option value="compras">Compras</option>
                       <option value="presupuesto">Presupuesto</option>
                       <option value="contabilidad">Contabilidad</option>
                       <option value="tesoreria">Tesorería</option>
                     </select>
+                    {editando && usuarioSeleccionado?.rol === 'admin' && (
+                      <div className="form-text">El rol del usuario administrador no puede cambiarse.</div>
+                    )}
                   </div>
                   {mensaje && <div className="alert alert-info mt-2">{mensaje}</div>}
                 </div>

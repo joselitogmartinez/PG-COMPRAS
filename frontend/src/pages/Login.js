@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
   import lago from '../img/lago.png'; // Asegúrate de que la ruta sea correcta
   import mspastrans from '../img/mspastrans.png'; // Asegúrate de que la ruta sea correcta
   import '../stylesLogin.css';
+  
   const Login = () => {
     const [formulario, setFormulario] = useState({
-      email: '',
+      usuario: '',
       contraseña: ''
     });
     const [mensaje, setMensaje] = useState('');
@@ -24,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
       e.preventDefault();
       setMensaje('');
       try {
-        const res = await axios.post('http://localhost:5000/api/auth/login', formulario);
+  const res = await axios.post('http://localhost:5000/api/auth/login', formulario);
         setMensaje('Login exitoso');
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('rol', res.data.usuario.rol);
@@ -59,12 +60,12 @@ import { useNavigate } from 'react-router-dom';
               />
             </div>
             <div className="login-field-custom">
-              <label htmlFor="email" className="login-label-custom">Correo</label>
+              <label htmlFor="usuario" className="login-label-custom">Usuario</label>
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={formulario.email}
+                type="text"
+                id="usuario"
+                name="usuario"
+                value={formulario.usuario}
                 onChange={handleChange}
                 required
                 autoComplete="username"

@@ -7,25 +7,6 @@ import TablaExpedientesAreas from '../components/components_pag_presupuesto/Tabl
 import ModalTraslado from '../components/ModalTraslado';
 import ModalAreas from '../components/components_pag_presupuesto/ModalAreas';
 
-const getColumnasPresupuesto = (row) => {
-  // Determinar qué campo usar para la primera columna según la modalidad
-  const campoNo = row.modalidad === 'COMPRA DIRECTA' ? 'no_identificacion' : 'no';
-  
-  return [
-    { name: campoNo, label: 'No' },
-    { name: 'modalidad', label: 'Modalidad' },
-    { name: 'descripcion_evento', label: 'Descripción Evento' },
-    { name: 'no_oc', label: 'No. O.C' },
-    { name: 'nit_adjudicado', label: 'NIT Adjudicado' },
-    { name: 'proveedor', label: 'Proveedor' },
-    { name: 'producto', label: 'Producto' },
-    { name: 'cantidad_adjudicada', label: 'Cantidad Adjudicada' },
-    { name: 'monto_total', label: 'Monto Total' },
-    { name: 'factura_numero', label: 'No. Factura' },
-    { name: 'cur_numero', label: 'No. CUR' },
-    { name: 'cur_aprobado', label: 'CUR Aprobado' },
-  ];
-};
 
 const COLUMNAS_PRESUPUESTO = [
   { name: 'no_identificacion', label: 'No' }, // Por defecto

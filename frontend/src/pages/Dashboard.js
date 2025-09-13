@@ -1,8 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import { CAMPOS_MODALIDAD, MODALIDADES } from '../utils/constantes';
+import { MODALIDADES, COLUMNAS_TABLA } from '../utils/constantes';
+import ModalReporte from '../components/components_pag_compras/ModalReporte';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../dashboard.css';
 import '../styles/modalExpediente.css';
 
@@ -11,12 +15,17 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const AREAS = ['compras', 'presupuesto', 'contabilidad', 'tesoreria'];
 
 const Dashboard = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [expedientes, setExpedientes] = useState([]);
   const [expedienteSeleccionado, setExpedienteSeleccionado] = useState(null);
-  const [filtroModalidad, setFiltroModalidad] = useState('');
+  const [filtroModalidad, setFiltroModalidad] = useState('directa');
+  const [filtroEstatus, setFiltroEstatus] = useState(''); // 'EN PROCESO', 'ADJUDICADO', 'NO ADJUDICADO', 'PRESCINDIDO', 'DESIERTO' o ''
   const [tipoBusqueda, setTipoBusqueda] = useState('nog');
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [filtroPago, setFiltroPago] = useState(''); // 'pagados', 'no_pagados', o ''
+  const [showReporte, setShowReporte] = useState(false);
+  const [camposReporte, setCamposReporte] = useState([]);
 
   // Función helper para obtener la clave de modalidad
   const getModalidadKey = (exp) => {
@@ -30,15 +39,20 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
     const fetchExpedientes = async () => {
       try {
         const res = await axios.get('http://localhost:5000/api/expedientes');
-        setExpedientes(res.data);
+        if (mounted) setExpedientes(res.data);
       } catch (err) {
-        setExpedientes([]);
+        if (mounted) setExpedientes([]);
       }
     };
+    // carga inicial
     fetchExpedientes();
+    // polling cada 10s
+    const intervalId = setInterval(fetchExpedientes, 10000);
+    return () => { mounted = false; clearInterval(intervalId); };
   }, []);
 
   // Filtrar expedientes
@@ -50,6 +64,14 @@ const Dashboard = () => {
       filtrados = filtrados.filter(exp => {
         const modalidadKey = getModalidadKey(exp);
         return modalidadKey === filtroModalidad;
+      });
+    }
+
+    // Filtro por estatus del expediente
+    if (filtroEstatus) {
+      filtrados = filtrados.filter(exp => {
+        const estado = (exp.estatus_evento || '').toUpperCase();
+        return estado === filtroEstatus.toUpperCase();
       });
     }
 
@@ -93,7 +115,155 @@ const Dashboard = () => {
     }
 
     return filtrados;
-  }, [expedientes, filtroModalidad, filtroPago, terminoBusqueda, tipoBusqueda]);
+  }, [expedientes, filtroModalidad, filtroEstatus, filtroPago, terminoBusqueda, tipoBusqueda]);
+
+  const camposTablaReporte = useMemo(() => {
+    const key = filtroModalidad || 'directa';
+    return COLUMNAS_TABLA[key] || [];
+  }, [filtroModalidad]);
+
+  // Abrir modal de Reportes cuando se navega desde el menú lateral
+  useEffect(() => {
+    if (location.state && location.state.openReport) {
+  // Asegurar modalidad por defecto 'directa' si no hay filtro activo
+  setFiltroModalidad(prev => prev || 'directa');
+      const cols = [
+        ...camposTablaReporte.map(c => c.name),
+        'cur_aprobado',
+        'cur_compromiso',
+        'pagado'
+      ];
+      setCamposReporte(cols);
+      setShowReporte(true);
+      // limpiar el state para evitar re-apertura al navegar
+      navigate('/dashboard', { replace: true, state: {} });
+    }
+  }, [location.state, camposTablaReporte, navigate]);
+
+  const extraCampos = useMemo(() => ([
+    { name: 'cur_aprobado', label: 'CUR Aprobado', type: 'text' },
+    { name: 'cur_compromiso', label: 'CUR Compromiso', type: 'text' },
+    { name: 'pagado', label: 'Pagado', type: 'checkbox' }
+  ]), []);
+
+  const allSelected = camposReporte.length > 0 && [...camposTablaReporte, ...extraCampos].every(c => camposReporte.includes(c.name));
+
+  const handleReporteClose = () => setShowReporte(false);
+  const handleCampoReporteChange = (campo) => {
+    setCamposReporte(prev => prev.includes(campo) ? prev.filter(c => c !== campo) : [...prev, campo]);
+  };
+  const handleToggleSeleccionTodos = () => {
+    if (allSelected) setCamposReporte([]);
+    else setCamposReporte([...camposTablaReporte, ...extraCampos].map(c => c.name));
+  };
+  const onModalidadFiltroChange = (key) => {
+    setFiltroModalidad(key);
+    setShowReporte(false);
+    setTimeout(() => {
+      const cols = COLUMNAS_TABLA[key] || [];
+      setCamposReporte([
+        ...cols.map(c => c.name),
+        'cur_aprobado', 'cur_compromiso', 'pagado'
+      ]);
+      setShowReporte(true);
+    }, 0);
+  };
+
+  const fmtFecha = (val) => {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    return `${dd}/${mm}/${yy}`;
+  };
+
+  const guessPdfFormat = (colCount) => {
+    if (colCount > 18) return 'a2';
+    if (colCount > 13) return 'a3';
+    return 'a4';
+  };
+
+  const getColumnStyles = (campos) => {
+    const styles = {};
+    campos.forEach(c => {
+      const n = c.name.toLowerCase();
+      const lbl = (c.label || '').toLowerCase();
+      const base = { cellWidth: 'wrap' };
+      if (/descripcion|descripción/.test(n) || /descripcion|descripción/.test(lbl)) styles[c.name] = { ...base, minCellWidth: 140 };
+      else if (/proveedor|nombre/.test(n) || /proveedor|nombre/.test(lbl)) styles[c.name] = { ...base, minCellWidth: 120 };
+      else if (/renglon|renglón|codigo|insumo/.test(n)) styles[c.name] = { ...base, minCellWidth: 70 };
+      else if (/modalidad/.test(n)) styles[c.name] = { ...base, minCellWidth: 90 };
+      else if (/distrito/.test(n)) styles[c.name] = { ...base, minCellWidth: 60 };
+      else if (/precio|monto|cantidad/.test(n)) styles[c.name] = { ...base, minCellWidth: 70, halign: 'right' };
+      else if (/fecha|_oc$|_ingreso/.test(n)) styles[c.name] = { ...base, minCellWidth: 75 };
+      else if (/cur|pagado|finalizado/.test(n)) styles[c.name] = { ...base, minCellWidth: 60 };
+      else if (/nog|npg|no_|^no$/.test(n)) styles[c.name] = { ...base, minCellWidth: 70, halign: 'center' };
+      else styles[c.name] = { ...base, minCellWidth: 80 };
+    });
+    return styles;
+  };
+
+  const abbreviateHeader = (text) => {
+    let t = String(text || '');
+    t = t.replace(/Número/gi, 'No.');
+    t = t.replace(/Descripción/gi, 'Desc.');
+    t = t.replace(/Proveedor/gi, 'Prov.');
+    t = t.replace(/Cantidad/gi, 'Cant.');
+    t = t.replace(/Unidad/gi, 'Und.');
+    t = t.replace(/Precio Unitario/gi, 'Precio U.');
+    t = t.replace(/Monto Total/gi, 'Monto');
+    t = t.replace(/Ingreso Almacén/gi, 'Ing. Almacén');
+    t = t.replace(/Fecha/gi, 'F.');
+    return t;
+  };
+
+  const handleExportPDF = () => {
+    if (!camposReporte.length) return alert('Selecciona al menos un campo.');
+    const campos = [...camposTablaReporte, ...extraCampos].filter(c => camposReporte.includes(c.name));
+    const format = guessPdfFormat(campos.length);
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format });
+    const modalidadLabel = filtroModalidad ? MODALIDADES.find(m => m.key === filtroModalidad)?.label : 'TODAS';
+    const fecha = new Date();
+    doc.setFontSize(16);
+    doc.text(`REPORTE DE ${modalidadLabel}`, 40, 36);
+    doc.setFontSize(10);
+    doc.text(`Generado el: ${fmtFecha(fecha)}`, 40, 54);
+    const columnas = campos.map(c => ({ header: c.label, dataKey: c.name }));
+    const filas = expedientesFiltrados.map(row => {
+      const obj = {};
+      campos.forEach(c => {
+        const raw = row[c.name];
+        if (typeof raw === 'boolean' || c.type === 'checkbox' || /pagado|finalizado/i.test(c.name)) {
+          obj[c.name] = raw === true ? 'SI' : raw === false ? 'NO' : '';
+        } else if (c.type === 'date' || /fecha|_oc$|_ingreso/i.test(c.name)) {
+          obj[c.name] = fmtFecha(raw);
+        } else {
+          obj[c.name] = raw ?? '';
+        }
+      });
+      return obj;
+    });
+    autoTable(doc, {
+      columns: columnas,
+      body: filas,
+      startY: 70,
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
+      headStyles: { fillColor: [30, 136, 229], textColor: 255, fontSize: 8, valign: 'middle' },
+      columnStyles: getColumnStyles(campos),
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      tableWidth: 'auto',
+      margin: { left: 40, right: 40 },
+      didParseCell: (data) => {
+        if (data.section === 'head') {
+          data.cell.text = [abbreviateHeader(data.cell.raw)];
+        }
+      }
+    });
+    const nombreArchivo = `Reporte_${modalidadLabel.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+    doc.save(nombreArchivo);
+  };
 
   // Distribución de expedientes por área según filtros aplicados
   const expedientesPorArea = AREAS.reduce((acc, area) => {
@@ -278,8 +448,20 @@ const Dashboard = () => {
     const contadorMeses = new Array(12).fill(0);
 
     expedientes.forEach(exp => {
-      if (exp.fecha_oc || exp.fecha_adjudicacion) {
-        const fecha = new Date(exp.fecha_oc || exp.fecha_adjudicacion);
+      const modalidadKey = getModalidadKey(exp);
+      let fechaStr = null;
+      if (modalidadKey === 'baja') {
+        // Baja Cuantía: usar Fecha OC exclusivamente
+        fechaStr = exp.fecha_oc || null;
+      } else if (modalidadKey === 'directa') {
+        // Compra Directa: usar Fecha Adjudicación exclusivamente
+        fechaStr = exp.fecha_adjudicacion || null;
+      } else if (modalidadKey === 'abierto') {
+        // Contrato Abierto: priorizar Adjudicación; usar OC sólo como respaldo
+        fechaStr = exp.fecha_adjudicacion || exp.fecha_oc || null;
+      }
+      if (fechaStr) {
+        const fecha = new Date(fechaStr);
         if (!isNaN(fecha.getTime())) {
           contadorMeses[fecha.getMonth()]++;
         }
@@ -337,6 +519,19 @@ const Dashboard = () => {
           ))}
         </select>
 
+        <select
+          value={filtroEstatus}
+          onChange={(e) => setFiltroEstatus(e.target.value)}
+          className="dashboard-select-compact"
+        >
+          <option value="">Todos los estatus</option>
+          <option value="EN PROCESO">EN PROCESO</option>
+          <option value="ADJUDICADO">ADJUDICADO</option>
+          <option value="NO ADJUDICADO">NO ADJUDICADO</option>
+          <option value="PRESCINDIDO">PRESCINDIDO</option>
+          <option value="DESIERTO">DESIERTO</option>
+        </select>
+
         <select 
           value={tipoBusqueda} 
           onChange={(e) => setTipoBusqueda(e.target.value)}
@@ -359,6 +554,7 @@ const Dashboard = () => {
         <button 
           onClick={() => {
             setFiltroModalidad('');
+            setFiltroEstatus('');
             setFiltroPago('');
             setTerminoBusqueda('');
             setTipoBusqueda('nog');
@@ -368,6 +564,7 @@ const Dashboard = () => {
           Limpiar
         </button>
           </div>
+          
         </div>
 
       <div className="dashboard-areas-header">
@@ -391,7 +588,12 @@ const Dashboard = () => {
               expedientesPorArea[area].map(exp => (
                 <div
                   key={exp._id}
-                  className="dashboard-expediente-item"
+                  className={`dashboard-expediente-item ${(() => {
+                    const estado = (exp.estatus_evento || '').toUpperCase();
+                    return (estado === 'DESIERTO' || estado === 'NO ADJUDICADO' || estado === 'PRESCINDIDO')
+                      ? 'dashboard-expediente-item-danger'
+                      : '';
+                  })()}`}
                   onClick={() => setExpedienteSeleccionado(exp)}
                 >
                   <div className="dashboard-expediente-no"><strong>No:</strong> {exp.no_identificacion}</div>
@@ -417,10 +619,106 @@ const Dashboard = () => {
         ))}
         </div>
       </div>
+      {/* Modal Reporte */}
+      <ModalReporte
+        show={showReporte}
+        onClose={handleReporteClose}
+        camposTabla={camposTablaReporte}
+        camposReporte={camposReporte}
+        handleCampoReporteChange={handleCampoReporteChange}
+        handleToggleSeleccionTodos={handleToggleSeleccionTodos}
+        allSelected={allSelected}
+        modalidad={filtroModalidad || 'directa'}
+        onModalidadFiltroChange={onModalidadFiltroChange}
+        extraCampos={extraCampos}
+        handleExportExcel={async () => {
+          if (!camposReporte || camposReporte.length === 0) {
+            alert('Selecciona al menos un campo para exportar.');
+            return;
+          }
+          const ExcelJSImport = await import('exceljs/dist/exceljs.min.js');
+          const ExcelJS = ExcelJSImport?.default || ExcelJSImport;
+          const fileSaverMod = await import('file-saver');
+          const saveAs = (fileSaverMod && (fileSaverMod.saveAs || fileSaverMod.default)) ? (fileSaverMod.saveAs || fileSaverMod.default) : null;
+          if (!saveAs) {
+            alert('No se pudo cargar el módulo de guardado de archivos.');
+            return;
+          }
+          const campos = [...camposTablaReporte, ...extraCampos].filter(c => camposReporte.includes(c.name));
+          const modalidadLabel = filtroModalidad ? (MODALIDADES.find(m => m.key === filtroModalidad)?.label || 'TODAS') : 'TODAS';
+          const fechaReporte = new Date();
+          const fechaStr = fechaReporte.toLocaleDateString();
+          const horaStr = fechaReporte.toLocaleTimeString();
+  
+          const workbook = new ExcelJS.Workbook();
+          const ws = workbook.addWorksheet('Reporte');
+  
+          ws.mergeCells('A1', String.fromCharCode(65 + campos.length - 1) + '1');
+          ws.getCell('A1').value = `REPORTE DE ${modalidadLabel}`;
+          ws.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF0D47A1' } };
+          ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left' };
+  
+          ws.mergeCells('A2', String.fromCharCode(65 + campos.length - 1) + '2');
+          ws.getCell('A2').value = `Generado el: ${fechaStr} ${horaStr}`;
+          ws.getCell('A2').font = { size: 10, color: { argb: 'FF374151' } };
+  
+          ws.addRow([]);
+          const headerRow = ws.addRow(campos.map(c => c.label));
+          headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          headerRow.height = 22;
+          headerRow.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E88E5' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+          });
+  
+          expedientesFiltrados.forEach(row => {
+            const values = campos.map(c => {
+              const raw = row[c.name];
+              if (typeof raw === 'boolean' || c.type === 'checkbox' || /pagado|finalizado/i.test(c.name)) {
+                return raw === true ? 'SI' : raw === false ? 'NO' : '';
+              }
+              if (c.type === 'date' || /fecha|fecha_|_fecha|_oc$|_ingreso/i.test(c.name)) {
+                return fmtFecha(raw);
+              }
+              return raw ?? '';
+            });
+            const dataRow = ws.addRow(values);
+            dataRow.alignment = { vertical: 'top' };
+            dataRow.eachCell((cell) => {
+              cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+              if (typeof cell.value === 'string' && cell.value.length > 60) {
+                cell.alignment = { wrapText: true };
+              }
+              // Asegurar celdas vacías con bordes visibles
+              if (cell.value === null || cell.value === undefined || cell.value === '') {
+                cell.value = '';
+              }
+            });
+          });
+  
+          campos.forEach((c, i) => {
+            const maxLen = Math.max(
+              c.label.length,
+              ...expedientesFiltrados.map(r => (r[c.name] ? String(r[c.name]).length : 0))
+            );
+            ws.getColumn(i + 1).width = Math.min(Math.max(maxLen + 4, 12), 60);
+          });
+  
+          const nombreArchivo = `Reporte_${modalidadLabel.replace(/\s+/g, '_')}_${fechaReporte.toISOString().slice(0,10)}.xlsx`;
+          const buffer = await workbook.xlsx.writeBuffer();
+          saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), nombreArchivo);
+        }}
+        handleExportPDF={handleExportPDF}
+      />
       </div> {/* Fin dashboard-top-section */}
       
-      {/* Estadísticas y Gráfica */}
+      {/* Cajón inferior: Estadísticas y Gráfica */}
       <div className="dashboard-bottom-section">
+        <div className="dashboard-bottom-handle" title="Coloque el mouse aquí para ver estadísticas y gráfica">
+          ▴ Estadísticas y gráfica
+        </div>
+        <div className="dashboard-bottom-content">
         {/* Estadísticas por Modalidad */}
         <div className="dashboard-statistics">
           <div className="dashboard-statistics-cards">
@@ -497,17 +795,17 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Tarjeta de Expedientes No Pagados */}
+                {/* Tarjeta de Expedientes Pendiente pago */}
                 <div 
                   className={`dashboard-stat-mini-card dashboard-stat-mini-card-unpaid ${
                     (stat.key === 'total' ? (filtroModalidad === '' && filtroPago === 'no_pagados') : 
                     (filtroModalidad === stat.key && filtroPago === 'no_pagados')) ? 'dashboard-stat-mini-card-active' : ''
                   }`}
                   onClick={() => handleFiltrarPorPago(stat.key, 'no_pagados')}
-                  title="Click para filtrar expedientes no pagados"
+                  title="Click para filtrar expedientes pendiente pago"
                 >
                   <div className="dashboard-stat-mini-item">
-                    <span className="dashboard-stat-mini-label">✗ Expedientes No Pagados:</span>
+                    <span className="dashboard-stat-mini-label">✗ Expedientes Pendiente pago:</span>
                     <span className="dashboard-stat-mini-value dashboard-stat-mini-value-unpaid">
                       {stat.expedientesNoPagados}
                     </span>
@@ -525,10 +823,10 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-        </div>
+  </div>
 
-        {/* Gráfica de Compras por Mes */}
-        <div className="dashboard-chart-container">
+  {/* Gráfica de Compras por Mes */}
+  <div className="dashboard-chart-container">
           <h3 className="dashboard-chart-title">Compras por Mes</h3>
           <div className="dashboard-chart">
             <Bar 
@@ -555,6 +853,7 @@ const Dashboard = () => {
               }}
             />
           </div>
+        </div>
         </div>
       </div>
 
@@ -638,32 +937,52 @@ const Dashboard = () => {
               </span>
             </div>
             
-            <div className="dashboard-modal-field">
-              <strong>Estado:</strong> 
-              <span className={`modal-value-estado ${
-                (() => {
-                  const estado = expedienteSeleccionado.estatus_evento;
-                  if (estado === 'ADJUDICADO') return 'estado-adjudicado';
-                  if (estado === 'NO ADJUDICADO') return 'estado-no-adjudicado';
-                  if (estado === 'EN PROCESO') return 'estado-proceso';
-                  if (estado === 'PRESCINDIDO') return 'estado-prescindido';
-                  if (estado === 'DESIERTO') return 'estado-desierto';
-                  return 'estado-proceso';
-                })()
-              }`}>
-                {(() => {
-                  const estado = expedienteSeleccionado.estatus_evento || 'EN PROCESO';
-                  const iconos = {
-                    'ADJUDICADO': '✅',
-                    'NO ADJUDICADO': '❌',
-                    'EN PROCESO': '🔄',
-                    'PRESCINDIDO': '⚠️',
-                    'DESIERTO': '�'
-                  };
-                  return `${iconos[estado] || '🔄'} ${estado}`;
-                })()}
-              </span>
-            </div>
+            {expedienteSeleccionado.areaActual?.toLowerCase() !== 'tesoreria' && (
+              <div className="dashboard-modal-field">
+                <strong>Estado:</strong> 
+                <span className={`modal-value-estado ${
+                  (() => {
+                    const estado = expedienteSeleccionado.estatus_evento;
+                    if (estado === 'ADJUDICADO') return 'estado-adjudicado';
+                    if (estado === 'NO ADJUDICADO') return 'estado-no-adjudicado';
+                    if (estado === 'EN PROCESO') return 'estado-proceso';
+                    if (estado === 'PRESCINDIDO') return 'estado-prescindido';
+                    if (estado === 'DESIERTO') return 'estado-desierto';
+                    return 'estado-proceso';
+                  })()
+                }`}>
+                  {(() => {
+                    const estado = expedienteSeleccionado.estatus_evento || 'EN PROCESO';
+                    const iconos = {
+                      'ADJUDICADO': '✅',
+                      'NO ADJUDICADO': '❌',
+                      'EN PROCESO': '🔄',
+                      'PRESCINDIDO': '⚠️',
+                      'DESIERTO': '�'
+                    };
+                    return `${iconos[estado] || '🔄'} ${estado}`;
+                  })()}
+                </span>
+              </div>
+            )}
+
+            {/* Estado de Pago (solo en Tesorería) */}
+            {expedienteSeleccionado.areaActual?.toLowerCase() === 'tesoreria' && (
+              <div className="dashboard-modal-field">
+                <strong>Estado de Pago:</strong>
+                <span
+                  className={`modal-value-estado ${
+                    expedienteSeleccionado.pagado === true
+                      ? 'estado-pagado'
+                      : expedienteSeleccionado.pagado === false
+                      ? 'estado-pendiente'
+                      : 'estado-proceso'
+                  }`}
+                >
+                  {expedienteSeleccionado.pagado === true ? '✓ Pagado' : '✗ Pendiente pago'}
+                </span>
+              </div>
+            )}
             
             <div className="dashboard-modal-field dashboard-modal-field-modalidad">
               <strong>Modalidad:</strong> 
@@ -676,33 +995,51 @@ const Dashboard = () => {
           </div>
           <div className="dashboard-modal-checklist">
             {(() => {
-              const campos = CAMPOS_MODALIDAD[getModalidadKey(expedienteSeleccionado)] || [];
-              const mitad = Math.ceil(campos.length / 2);
-              const col1 = campos.slice(0, mitad);
-              const col2 = campos.slice(mitad);
+              // Campos solicitados, con etiquetas ajustadas
+              const camposDeseados = [
+                { name: 'no_nog', label: 'NOG' },
+                { name: 'no_oc', label: 'No. O.C' },
+                { name: 'proveedor', label: 'Nombre Proveedor' },
+                { name: 'renglon', label: 'Renglón' },
+                { name: 'precio', label: 'Precio Unitario' },
+                { name: 'cantidad_adjudicada', label: 'Cantidad Adjudicada' },
+                { name: 'monto_total', label: 'Monto Total' },
+                { name: 'factura_numero', label: 'No. Factura' },
+                { name: 'almacen_no_ingreso', label: 'No. Ingreso Almacén' },
+                { name: 'cur_numero', label: 'CUR Solicitado' },
+                { name: 'cur_devengado', label: 'CUR Devengado' },
+                { name: 'cur_aprobado', label: 'CUR Aprobado' },
+                { name: 'pagado', label: 'Pagado' },
+                { name: 'finalizado', label: 'Finalizado' },
+              ];
+
+              // Orden sugerido: repartimos en dos columnas
+              const mitad = Math.ceil(camposDeseados.length / 2);
+              const col1 = camposDeseados.slice(0, mitad);
+              const col2 = camposDeseados.slice(mitad);
+
+              const renderItem = (campo) => {
+                const valor = expedienteSeleccionado[campo.name];
+                const checked = (() => {
+                  if (typeof valor === 'boolean') return valor;
+                  if (valor === 0) return true; // permitir 0 como válido para montos
+                  return !!valor;
+                })();
+                return (
+                  <li key={campo.name} className="dashboard-modal-checklist-item">
+                    {checked ? <span className="dashboard-check-ok">✔</span> : <span className="dashboard-check-fail">✘</span>}
+                    <span>{campo.label}</span>
+                  </li>
+                );
+              };
+
               return (
                 <>
                   <ul className="dashboard-modal-checklist-col">
-                    {col1.map(campo => (
-                      <li key={campo.name} className="dashboard-modal-checklist-item">
-                        {expedienteSeleccionado[campo.name]
-                          ? <span className="dashboard-check-ok">✔</span>
-                          : <span className="dashboard-check-fail">✘</span>
-                        }
-                        <span>{campo.label}</span>
-                      </li>
-                    ))}
+                    {col1.map(renderItem)}
                   </ul>
                   <ul className="dashboard-modal-checklist-col">
-                    {col2.map(campo => (
-                      <li key={campo.name} className="dashboard-modal-checklist-item">
-                        {expedienteSeleccionado[campo.name]
-                          ? <span className="dashboard-check-ok">✔</span>
-                          : <span className="dashboard-check-fail">✘</span>
-                        }
-                        <span>{campo.label}</span>
-                      </li>
-                    ))}
+                    {col2.map(renderItem)}
                   </ul>
                 </>
               );

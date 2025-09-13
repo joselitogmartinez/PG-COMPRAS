@@ -76,7 +76,7 @@ import React, { useState, useEffect } from 'react';
         if (filtros.pagado === 'SI' && !row.pagado) return false;
         if (filtros.pagado === 'NO' && row.pagado) return false;
         return true;
-    });
+    }); 
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -171,7 +171,7 @@ import React, { useState, useEffect } from 'react';
             >
             <option value="">Todos</option>
             <option value="SI">Pagados</option>
-            <option value="NO">No Pagados</option>
+            <option value="NO">Pendiente pago</option>
             </select>
         </div>
 
@@ -188,7 +188,7 @@ import React, { useState, useEffect } from 'react';
                     return <h5 className={tituloClass}>TODOS EXPEDIENTES PAGADOS</h5>;
                 }
                 if (!filtros.modalidad && filtros.pagado === 'NO') {
-                    return <h5 className={tituloClass}>TODOS EXPEDIENTES NO PAGADOS</h5>;
+                    return <h5 className={tituloClass}>TODOS EXPEDIENTES PENDIENTE PAGO</h5>;
                 }
                 // Si hay modalidad y pagado
                 let partes = [];

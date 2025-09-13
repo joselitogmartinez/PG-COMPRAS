@@ -4,6 +4,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaUsers,
   FaTachometerAlt,
+  FaFileAlt,
   FaChevronLeft,
   FaChevronRight,
   FaSignOutAlt
@@ -13,6 +14,7 @@ import mspastrans from '../img/mspastrans.png';
 const menuItems = [
   { key: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt />, path: '/dashboard' },
   { key: 'usuarios', label: 'Usuarios', icon: <FaUsers />, path: '/register' },
+  { key: 'reportes', label: 'Reportes', icon: <FaFileAlt />, action: 'open-report' },
 ];
 
 const LayoutDashboard = () => {
@@ -25,6 +27,19 @@ const LayoutDashboard = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('rol');
     navigate('/');
+  };
+
+  const handleMenuClick = (item) => {
+    if (item.action === 'open-report') {
+      // Navega a Dashboard y solicita abrir el modal de reportes
+      if (location.pathname !== '/dashboard') {
+        navigate('/dashboard', { state: { openReport: true } });
+      } else {
+        navigate('/dashboard', { state: { openReport: true }, replace: true });
+      }
+      return;
+    }
+    if (item.path) navigate(item.path);
   };
 
   return (
@@ -42,8 +57,8 @@ const LayoutDashboard = () => {
           {menuItems.map(item => (
             <div
               key={item.key}
-              className={`sidebar-item${location.pathname === item.path ? ' active' : ''}`}
-              onClick={() => navigate(item.path)}
+              className={`sidebar-item${item.path && location.pathname === item.path ? ' active' : ''}`}
+              onClick={() => handleMenuClick(item)}
             >
               <span className="sidebar-icon">{item.icon}</span>
               {menuOpen && <span className="sidebar-label">{item.label}</span>}
@@ -70,7 +85,6 @@ const LayoutDashboard = () => {
     </div>
   );
 };
-
 
 export default LayoutDashboard;
 

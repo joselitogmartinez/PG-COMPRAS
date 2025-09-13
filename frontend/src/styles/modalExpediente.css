@@ -5,7 +5,7 @@
   right: 0;
   width: 28rem;
   height: 100vh;
-  background: linear-gradient(to bottom, #ffffff, #f8fafc);
+  background: #f3f4f6; /* gris claro sólido */
   border-left: 2px solid #2563eb;
   box-shadow: -4px 0 20px rgba(0,0,0,0.15);
   z-index: 50;

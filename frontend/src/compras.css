@@ -1,3 +1,21 @@
+.report-modal .modal-body {
+	padding: 14px 18px 8px 22px; /* más margen a la izquierda y compacto */
+}
+.report-modal .modal-header {
+	padding: 10px 16px;
+}
+.report-modal .modal-footer {
+	padding: 10px 16px;
+}
+.report-modal .form-check {
+	margin-bottom: 4px;
+}
+.report-modal .form-check-input {
+	margin-top: 0.2rem;
+}
+.report-modal .form-check-label {
+	margin-left: .35rem;
+}
 /* Hover y focus celeste para filtros */
 .form-control:hover, .form-control:focus,
 .form-select:hover, .form-select:focus {
@@ -11,5 +29,23 @@
 .compras-header {
 	background-color: #1a237e; /* Azul oscuro, puedes cambiar el color */
 	color: #fff;
+}
+
+/* Report modal minor polish */
+.modal-content .form-check {
+	padding: 6px 10px;
+	border-radius: 8px;
+}
+.modal-content .form-check:hover {
+	background: #f3f4f6;
+}
+.modal-content .form-select {
+	min-height: 38px;
+}
+.modal-content .form-check-input {
+	margin-top: 0.35rem;
+}
+.modal-content .form-check-label {
+	margin-left: .35rem;
 }
 

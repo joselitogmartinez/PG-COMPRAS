@@ -137,7 +137,7 @@ const TablaExpedientes = ({
         );
       }
     }
-  ], [camposTabla, handleAbrirTraslado, handleEliminar]);
+  ], [camposTabla, handleAbrirTraslado, handleEliminar, modalidad]);
 
   const data = React.useMemo(
     () => rowsFiltrados.map((row, idx) => ({ ...row, id: row._id || idx })),

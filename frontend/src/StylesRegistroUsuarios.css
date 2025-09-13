@@ -21,14 +21,84 @@ body, html {
 /*ESTILOS PARA REGISTER ---------------------------------------------*/
 
 
-/* Cambia el color del fondo del switch según el estado */
-.switch-ios input:checked + .slider-ios {
-  background-color: #28a745; /* verde */
+/* Contenedor tarjeta/tablas modernizado */
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  overflow: hidden;
 }
 
-.switch-ios input:not(:checked) + .slider-ios {
-  background-color: #dc3545; /* rojo */
+.card .card-body {
+  padding: 0; /* Tabla a full width sin relleno extra */
+  max-height: 60vh; /* Hace la tabla scrollable dentro de la tarjeta */
+  overflow: auto;
 }
+
+.card .table {
+  margin-bottom: 0;
+}
+
+.card .table thead.table-primary th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #eef2ff !important; /* tono suave */
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.card .table th,
+.card .table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
+.card .table tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+.card .table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.card .table tbody tr:hover {
+  background: #eef2ff;
+}
+
+/* Borde más sutil para la tabla con clase table-bordered */
+.table.table-bordered > :not(caption) > * > * {
+  border-color: #e5e7eb;
+}
+
+/* Botón Registrar modernizado solo para esta página (se importa localmente) */
+.btn.btn-primary {
+  background: linear-gradient(135deg, #1a73e8, #1557b0);
+  border: none;
+  box-shadow: 0 6px 14px rgba(26,115,232,0.35);
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.btn.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(26,115,232,0.35);
+  filter: brightness(1.03);
+}
+.btn.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 5px 12px rgba(26,115,232,0.28);
+}
+
+/* Ajustes responsive */
+@media (max-width: 576px) {
+  .card .card-body {
+    max-height: 55vh;
+  }
+  .btn.btn-primary {
+    width: 100%;
+  }
+}
+
+/* Cambios al switch tipo iOS */
 .switch-ios {
   position: relative;
   display: inline-block;
@@ -45,7 +115,7 @@ body, html {
   position: absolute;
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ccc;
+  background-color: #d1d5db;
   transition: .4s;
   border-radius: 24px;
 }
@@ -59,10 +129,55 @@ body, html {
   background-color: white;
   transition: .4s;
   border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
 }
+.switch-ios input:focus + .slider-ios {
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.35);
+}
+/* Colores según estado */
 .switch-ios input:checked + .slider-ios {
-  background-color: #21f32f;
+  background-color: #22c55e; /* verde */
+}
+.switch-ios input:not(:checked) + .slider-ios {
+  background-color: #ef4444; /* rojo */
 }
 .switch-ios input:checked + .slider-ios:before {
   transform: translateX(20px);
+}
+
+/* Espaciados y micro-interacciones para iconos de acción */
+.card td svg {
+  display: inline-block;
+  transition: transform .12s ease-in-out, opacity .12s ease-in-out;
+}
+.card td svg:hover {
+  transform: translateY(-1px) scale(1.06);
+}
+
+/* Modal más moderno */
+.modal-content {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+}
+.modal-header.bg-primary {
+  background: linear-gradient(135deg, #1a73e8, #1557b0) !important;
+}
+.form-control, .form-select {
+  border-radius: 10px;
+  border-color: #e5e7eb;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 .2rem rgba(26,115,232,.15);
+}
+.modal-footer {
+  border-top-color: #eef2f7;
+}
+.btn-close-white {
+  filter: invert(1);
+  opacity: .9;
+}
+.btn-close-white:hover {
+  opacity: 1;
 }

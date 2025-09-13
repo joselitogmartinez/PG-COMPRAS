@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
   import { FaSignOutAlt, FaPlus, FaSearch } from 'react-icons/fa';
   import 'bootstrap/dist/css/bootstrap.min.css';
   import axios from 'axios';
-  import * as XLSX from 'xlsx';
-  import { saveAs } from 'file-saver';
+  // XLSX no longer used; Excel export via exceljs with dynamic import
   import jsPDF from 'jspdf';
   import autoTable from 'jspdf-autotable';
   import logo from '../img/mspas.png';
@@ -39,7 +38,8 @@ import React, { useState, useEffect } from 'react';
     const [filtros, setFiltros] = useState({});
     const [hoveredRow, setHoveredRow] = useState(null);
     const [showReporte, setShowReporte] = useState(false);
-    const [camposReporte, setCamposReporte] = useState([]);
+  const [camposReporte, setCamposReporte] = useState([]);
+  const allSelected = camposReporte.length > 0 && COLUMNAS_TABLA[modalidad]?.every(c => camposReporte.includes(c.name));
     const [showTraslado, setShowTraslado] = useState(false);
     const [showMensaje, setShowMensaje] = useState(false);
     const [expedienteTraslado, setExpedienteTraslado] = useState(null);
@@ -236,7 +236,58 @@ import React, { useState, useEffect } from 'react';
 
     const camposTabla = COLUMNAS_TABLA[modalidad];
 
-    const handleReporte = () => {
+    // Helper: formatea fecha ISO/Date a dd/mm/yyyy
+    const fmtFecha = (val) => {
+      if (!val) return '';
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return val;
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = d.getFullYear();
+      return `${dd}/${mm}/${yy}`;
+    };
+
+    const guessPdfFormat = (colCount) => {
+      if (colCount > 18) return 'a2';
+      if (colCount > 13) return 'a3';
+      return 'a4';
+    };
+
+    const getColumnStyles = (campos) => {
+      const styles = {};
+      campos.forEach(c => {
+        const n = c.name.toLowerCase();
+        const lbl = (c.label || '').toLowerCase();
+        const base = { cellWidth: 'wrap' };
+        if (/descripcion|descripción/.test(n) || /descripcion|descripción/.test(lbl)) styles[c.name] = { ...base, minCellWidth: 140 };
+        else if (/proveedor|nombre/.test(n) || /proveedor|nombre/.test(lbl)) styles[c.name] = { ...base, minCellWidth: 120 };
+        else if (/renglon|renglón|codigo|insumo/.test(n)) styles[c.name] = { ...base, minCellWidth: 70 };
+        else if (/modalidad/.test(n)) styles[c.name] = { ...base, minCellWidth: 90 };
+        else if (/distrito/.test(n)) styles[c.name] = { ...base, minCellWidth: 60 };
+        else if (/precio|monto|cantidad/.test(n)) styles[c.name] = { ...base, minCellWidth: 70, halign: 'right' };
+        else if (/fecha|_oc$|_ingreso/.test(n)) styles[c.name] = { ...base, minCellWidth: 75 };
+        else if (/cur|pagado|finalizado/.test(n)) styles[c.name] = { ...base, minCellWidth: 60 };
+        else if (/nog|npg|no_|^no$/.test(n)) styles[c.name] = { ...base, minCellWidth: 70, halign: 'center' };
+        else styles[c.name] = { ...base, minCellWidth: 80 };
+      });
+      return styles;
+    };
+
+    const abbreviateHeader = (text) => {
+      let t = String(text || '');
+      t = t.replace(/Número/gi, 'No.');
+      t = t.replace(/Descripción/gi, 'Desc.');
+      t = t.replace(/Proveedor/gi, 'Prov.');
+      t = t.replace(/Cantidad/gi, 'Cant.');
+      t = t.replace(/Unidad/gi, 'Und.');
+      t = t.replace(/Precio Unitario/gi, 'Precio U.');
+      t = t.replace(/Monto Total/gi, 'Monto');
+      t = t.replace(/Ingreso Almacén/gi, 'Ing. Almacén');
+      t = t.replace(/Fecha/gi, 'F.');
+      return t;
+    };
+
+  const handleReporte = () => {
       setCamposReporte(camposTabla.map(c => c.name));
       setShowReporte(true);
     };
@@ -251,81 +302,168 @@ import React, { useState, useEffect } from 'react';
 
     const handleCerrarReporte = () => setShowReporte(false);
 
-    // Exportar Excel y PDF  
-    const handleExportExcel = () => {
-      const campos = camposTabla.filter(c => camposReporte.includes(c.name));
-      const data = rowsFiltrados.map(row =>
-        campos.reduce((acc, campo) => {
-          acc[campo.label] = row[campo.name];
-          return acc;
-        }, {})
-      );
+    const handleToggleSeleccionTodos = () => {
+      if (allSelected) {
+        setCamposReporte([]);
+      } else {
+        setCamposReporte(camposTabla.map(c => c.name));
+      }
+    };
 
+    const onModalidadFiltroChange = (key) => {
+      // Cambia la modalidad del reporte (reutiliza tabs actuales)
+      setCamposReporte([]);
+      setShowReporte(false);
+      // Cambiamos modalidad de la página también, para mantener consistencia
+      setModalidad(key);
+      // Reabrimos luego de un tick con campos por defecto
+      setTimeout(() => {
+        setCamposReporte(COLUMNAS_TABLA[key].map(c => c.name));
+        setShowReporte(true);
+      }, 0);
+    };
+
+    // Exportar Excel y PDF  
+    const handleExportExcel = async () => {
+      if (!camposReporte || camposReporte.length === 0) {
+        alert('Selecciona al menos un campo para exportar.');
+        return;
+      }
+      // Usaremos exceljs (build de navegador) para mejor estilo
+      const ExcelJSImport = await import('exceljs/dist/exceljs.min.js');
+      const ExcelJS = ExcelJSImport?.default || ExcelJSImport;
+      const fileSaverMod = await import('file-saver');
+      const saveAs = (fileSaverMod && (fileSaverMod.saveAs || fileSaverMod.default)) ? (fileSaverMod.saveAs || fileSaverMod.default) : null;
+      if (!saveAs) {
+        alert('No se pudo cargar el módulo de guardado de archivos.');
+        return;
+      }
+      const campos = camposTabla.filter(c => camposReporte.includes(c.name));
       const modalidadLabel = MODALIDADES.find(m => m.key === modalidad).label;
       const fechaReporte = new Date();
       const fechaStr = fechaReporte.toLocaleDateString();
       const horaStr = fechaReporte.toLocaleTimeString();
 
-      const titulo = [`REPORTE DE ${modalidadLabel}`];
-      const fecha = [`Generado el: ${fechaStr} ${horaStr}`];
-      const headers = [campos.map(campo => campo.label)];
-      const body = data.map(row => campos.map(campo => row[campo.label]));
+      const workbook = new ExcelJS.Workbook();
+      const ws = workbook.addWorksheet('Reporte');
 
-      const hoja = [
-        titulo,
-        fecha,
-        [],
-        ...headers,
-        ...body
-      ];
+      // Título
+      ws.mergeCells('A1', String.fromCharCode(65 + campos.length - 1) + '1');
+      ws.getCell('A1').value = `REPORTE DE ${modalidadLabel}`;
+      ws.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF0D47A1' } };
+      ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left' };
 
-      const ws = XLSX.utils.aoa_to_sheet(hoja);
+      ws.mergeCells('A2', String.fromCharCode(65 + campos.length - 1) + '2');
+      ws.getCell('A2').value = `Generado el: ${fechaStr} ${horaStr}`;
+      ws.getCell('A2').font = { size: 10, color: { argb: 'FF374151' } };
 
-      ws['!cols'] = campos.map(campo => {
-        if (
-          campo.label.toLowerCase().includes('descripción evento') ||
-          campo.label.toLowerCase().includes('descripcion del producto')
-        ) {
-          return { wch: 50 };
-        }
-        return {
-          wch: Math.max(
-            campo.label.length + 2,
-            ...body.map(row => (row[campos.findIndex(c => c.label === campo.label)] || '').toString().length + 2)
-          )
-        };
+      // Encabezados
+      ws.addRow([]);
+      const headerRow = ws.addRow(campos.map(c => c.label));
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      headerRow.height = 22;
+      headerRow.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E88E5' } };
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
       });
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
+      // Datos
+      rowsFiltrados.forEach(row => {
+        const values = campos.map(c => {
+          const raw = row[c.name];
+          // Booleanos como SI/NO
+          if (typeof raw === 'boolean' || c.type === 'checkbox' || /pagado|finalizado/i.test(c.name)) {
+            return raw === true ? 'SI' : raw === false ? 'NO' : '';
+          }
+          // Si el campo en constantes es de tipo fecha, o si el nombre sugiere fecha, formatear
+          if (c.type === 'date' || /fecha|fecha_|_fecha|_oc$|_ingreso/i.test(c.name)) {
+            return fmtFecha(raw);
+          }
+          return raw ?? '';
+        });
+        const dataRow = ws.addRow(values);
+        dataRow.alignment = { vertical: 'top' };
+        dataRow.eachCell((cell, colNumber) => {
+          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+          if (typeof cell.value === 'string' && cell.value.length > 60) {
+            cell.alignment = { wrapText: true };
+          }
+          if (cell.value === null || cell.value === undefined) {
+            cell.value = '';
+          }
+        });
+      });
+
+      // Anchos automáticos
+      campos.forEach((c, i) => {
+        const maxLen = Math.max(
+          c.label.length,
+          ...rowsFiltrados.map(r => (r[c.name] ? String(r[c.name]).length : 0))
+        );
+        ws.getColumn(i + 1).width = Math.min(Math.max(maxLen + 4, 12), 60);
+      });
+
       const nombreArchivo = `Reporte_${modalidadLabel.replace(/\s+/g, '_')}_${fechaReporte.toISOString().slice(0,10)}.xlsx`;
-      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      saveAs(new Blob([excelBuffer], { type: 'application/octet-stream' }), nombreArchivo);
+  const buffer = await workbook.xlsx.writeBuffer();
+  saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), nombreArchivo);
     };
     
     const handleExportPDF = () => {
-      const doc = new jsPDF('l');
+      if (!camposReporte || camposReporte.length === 0) {
+        alert('Selecciona al menos un campo para exportar.');
+        return;
+      }
+    const campos = camposTabla.filter(c => camposReporte.includes(c.name));
+    const format = guessPdfFormat(campos.length);
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format });
       const modalidadLabel = MODALIDADES.find(m => m.key === modalidad).label;
       const fechaReporte = new Date();
       const fechaStr = fechaReporte.toLocaleDateString();
       const horaStr = fechaReporte.toLocaleTimeString();
 
       doc.setFontSize(16);
-      doc.text(`REPORTE DE ${modalidadLabel}`, 14, 14);
+      doc.text(`REPORTE DE ${modalidadLabel}`, 40, 36);
       doc.setFontSize(10);
-      doc.text(`Generado el: ${fechaStr} ${horaStr}`, 14, 22);
+      doc.text(`Generado el: ${fechaStr} ${horaStr}`, 40, 54);
 
-      const columnas = camposTabla.filter(c => camposReporte.includes(c.name)).map(c => c.label);
-      const filas = rowsFiltrados.map(row =>
-        camposReporte.map(campo => row[campo])
-      );
+      const columnas = campos.map(c => ({ header: c.label, dataKey: c.name }));
+      const filas = rowsFiltrados.map(row => {
+        const obj = {};
+        campos.forEach(c => {
+          const raw = row[c.name];
+          if (typeof raw === 'boolean' || c.type === 'checkbox' || /pagado|finalizado/i.test(c.name)) {
+            obj[c.name] = raw === true ? 'SI' : raw === false ? 'NO' : '';
+          } else if (c.type === 'date' || /fecha|fecha_|_fecha|_oc$|_ingreso/i.test(c.name)) {
+            obj[c.name] = fmtFecha(raw);
+          } else {
+            obj[c.name] = raw ?? '';
+          }
+        });
+        return obj;
+      });
 
       autoTable(doc, {
-        head: [columnas],
+        columns: columnas,
         body: filas,
-        startY: 28,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [41, 128, 185] }
+        startY: 70,
+  styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
+        headStyles: { fillColor: [30, 136, 229], textColor: 255, fontSize: 8, valign: 'middle' },
+        columnStyles: getColumnStyles(campos),
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+  tableWidth: 'auto',
+  margin: { left: 40, right: 40 },
+        didParseCell: (data) => {
+          if (data.section === 'head') {
+            data.cell.text = [abbreviateHeader(data.cell.raw)];
+          }
+        },
+        didDrawPage: (data) => {
+          // Pie de página con número de página
+          const pageCount = doc.getNumberOfPages();
+          doc.setFontSize(9);
+          doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.getWidth() - 80, doc.internal.pageSize.getHeight() - 20);
+        },
       });
 
       const nombreArchivo = `Reporte_${modalidadLabel.replace(/\s+/g, '_')}_${fechaReporte.toISOString().slice(0,10)}.pdf`;
@@ -437,6 +575,10 @@ import React, { useState, useEffect } from 'react';
           camposTabla={camposTabla}
           camposReporte={camposReporte}
           handleCampoReporteChange={handleCampoReporteChange}
+          handleToggleSeleccionTodos={handleToggleSeleccionTodos}
+          allSelected={allSelected}
+          modalidad={modalidad}
+          onModalidadFiltroChange={onModalidadFiltroChange}
           handleExportExcel={handleExportExcel}
           handleExportPDF={handleExportPDF}
         />

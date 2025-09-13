@@ -31,7 +31,7 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Mantener filtros a un lado del título en desktop */
 }
 
 .dashboard-top-section {
@@ -127,6 +127,17 @@
   transition: all 0.3s ease;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-expediente-item-danger {
+  border-left-color: #dc2626; /* rojo */
+  background: linear-gradient(135deg, rgba(254, 202, 202, 0.816) 0%, rgba(254, 226, 226, 0.718) 100%);
+}
+
+.dashboard-expediente-item-danger:hover {
+  border-color: #fecaca;
+  border-left-color: #b91c1c;
+  background: linear-gradient(135deg, rgb(254, 202, 202) 0%, rgba(254, 226, 226, 0.71) 100%);
 }
 
 .dashboard-expediente-item:hover {
@@ -275,9 +286,10 @@
     inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(59, 130, 246, 0.1);
   align-items: center;
-  flex-wrap: wrap;
-  flex-shrink: 1;
-  min-width: 0;
+  flex-wrap: wrap; /* Los controles pueden partir en varias líneas dentro de este contenedor */
+  flex: 1 1 auto; /* Ocupar espacio disponible junto al título */
+  min-width: 0; /* Permitir que el contenedor reduzca su ancho sin romper layout */
+  max-width: 100%;
 }
 
 .dashboard-select-compact, .dashboard-input-compact {
@@ -292,11 +304,17 @@
 }
 
 .dashboard-select-compact {
-  min-width: 130px;
+  min-width: 120px;
+  max-width: 100%;
+  width: auto;
+  flex: 1 1 160px; /* crece y se reduce; base ~160px */
 }
 
 .dashboard-input-compact {
-  min-width: 280px;
+  min-width: 160px;
+  max-width: 100%;
+  width: auto;
+  flex: 2 1 260px; /* el input de búsqueda puede ocupar más espacio */
 }
 
 .dashboard-select-compact:focus, .dashboard-input-compact:focus {
@@ -328,6 +346,8 @@
     0 2px 4px -1px rgba(59, 130, 246, 0.2);
   position: relative;
   overflow: hidden;
+  flex: 0 0 auto; /* no forzar crecimiento; mantener en línea si hay espacio */
+  white-space: nowrap; /* evitar que el texto parta */
 }
 
 .dashboard-clear-btn-compact::before {
@@ -385,14 +405,41 @@
 
 /* Sección inferior con estadísticas y gráfica */
 .dashboard-bottom-section {
-  display: flex;
-  gap: 0.75rem;
+  position: relative;
+  display: block;
   margin-top: 0.25rem;
   flex-shrink: 0;
-  height: calc(50vh - 25px);
-  min-height: 185px;
-  max-height: 265px;
-  overflow: visible;
+}
+
+.dashboard-bottom-handle {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 0.35rem 0;
+  background: linear-gradient(90deg, #e5e7eb, #f3f4f6);
+  color: #1f2937;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05) inset;
+  cursor: default;
+  user-select: none;
+}
+
+.dashboard-bottom-content {
+  display: flex;
+  gap: 0.75rem;
+  overflow: hidden;
+  height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+}
+
+.dashboard-bottom-section:hover .dashboard-bottom-content {
+  height: 250px; /* altura expandida */
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Estilos para estadísticas compactas */
@@ -661,14 +708,20 @@
   }
 
   .dashboard-select-compact, .dashboard-input-compact {
-    min-width: 100px;
     font-size: 0.7rem;
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
-  .dashboard-bottom-section {
-    flex-direction: column;
-    height: auto;
-    gap: 1rem;
+  .dashboard-clear-btn-compact {
+    width: 100%;
+  }
+
+  .dashboard-bottom-content {
+    height: 0;
+  }
+  .dashboard-bottom-section:hover .dashboard-bottom-content {
+    height: 320px;
   }
 
   .dashboard-statistics-cards {
@@ -698,5 +751,24 @@
 
   .dashboard-chart {
     height: 200px;
+  }
+}
+
+/* Ajustes intermedios para evitar saltos tempranos */
+@media (max-width: 1200px) {
+  .dashboard-input-compact {
+    flex: 1 1 220px;
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 992px) {
+  .dashboard-select-compact {
+    flex: 1 1 140px;
+    min-width: 110px;
+  }
+  .dashboard-input-compact {
+    flex: 1 1 180px;
+    min-width: 120px;
   }
 }
