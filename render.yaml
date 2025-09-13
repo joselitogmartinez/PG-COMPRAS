@@ -2,7 +2,7 @@ services:
   - type: web
     name: pg-compras-backend
     env: node
-    plan: free
+    plan: starter
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
@@ -24,7 +24,6 @@ services:
   - type: web
     name: pg-compras-frontend
     env: static
-    plan: free
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: build
