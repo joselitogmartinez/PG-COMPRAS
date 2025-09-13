@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
-import { apiUrl } from '../utils/api';
 import logo from '../img/mspas.png';
 import TablaExpedientesAreas from '../components/components_pag_presupuesto/TablaExpedientesAreas';
 import ModalTraslado from '../components/ModalTraslado';
@@ -44,7 +43,7 @@ const Presupuesto = () => {
   useEffect(() => {
     const fetchExpedientes = async () => {
       try {
-  const res = await axios.get(apiUrl('/api/expedientes'));
+  const res = await axios.get('http://localhost:5000/api/expedientes');
         setRows(res.data);
       } catch (err) {
         setRows([]);
@@ -87,7 +86,7 @@ const rowsFiltrados = rows.filter(row => {
     if (!expedienteTraslado) return;
     try {
       const res = await axios.put(
-        apiUrl(`/api/expedientes/trasladar/${expedienteTraslado._id}`),
+        `http://localhost:5000/api/expedientes/trasladar/${expedienteTraslado._id}`,
         { area }
       );
       setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
@@ -107,7 +106,7 @@ const rowsFiltrados = rows.filter(row => {
     if (!expedienteCur) return;
     try {
       const res = await axios.put(
-        apiUrl(`/api/expedientes/${expedienteCur._id}`),
+        `http://localhost:5000/api/expedientes/${expedienteCur._id}`,
         { cur_aprobado: curAprobado }
       );
       setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));

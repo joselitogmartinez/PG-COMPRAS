@@ -2,7 +2,7 @@ services:
   - type: web
     name: pg-compras-backend
     env: node
-    plan: starter
+  plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js

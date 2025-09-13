@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../StylesRegistroUsuarios.css';
 import axios from 'axios';
-import { apiUrl } from '../utils/api';
 import { FaUserPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -26,7 +25,7 @@ const Register = () => {
 
   const obtenerUsuarios = async () => {
     try {
-  const respuesta = await axios.get(apiUrl('/api/auth/usuarios'));
+  const respuesta = await axios.get('http://localhost:5000/api/auth/usuarios');
       setUsuarios(respuesta.data);
     } catch (error) {
       console.error('Error al obtener usuarios', error);
@@ -45,7 +44,7 @@ const Register = () => {
     setMensaje('');
     try {
       if (editando && usuarioSeleccionado) {
-  await axios.put(apiUrl(`/api/auth/usuarios/${usuarioSeleccionado._id}`), {
+  await axios.put(`http://localhost:5000/api/auth/usuarios/${usuarioSeleccionado._id}`, {
           nombre: formulario.nombre,
           usuario: formulario.usuario,
           contraseña: formulario.contraseña ? formulario.contraseña : undefined,
@@ -54,7 +53,7 @@ const Register = () => {
         });
         setMensaje('Usuario actualizado correctamente');
       } else {
-  await axios.post(apiUrl('/api/auth/register'), formulario);
+  await axios.post('http://localhost:5000/api/auth/register', formulario);
         setMensaje('Usuario registrado correctamente');
       }
   setFormulario({ nombre: '', usuario: '', contraseña: '', rol: 'compras' });
@@ -69,7 +68,7 @@ const Register = () => {
 
   const handleToggleActivo = async (usuario) => {
     try {
-  await axios.patch(apiUrl(`/api/auth/usuarios/${usuario._id}`), {
+  await axios.patch(`http://localhost:5000/api/auth/usuarios/${usuario._id}`, {
         activo: !usuario.activo
       });
       obtenerUsuarios();
@@ -101,7 +100,7 @@ const Register = () => {
     }
     if (window.confirm('¿Está seguro que desea eliminar este usuario?')) {
       try {
-  await axios.delete(apiUrl(`/api/auth/usuarios/${usuario._id}`));
+  await axios.delete(`http://localhost:5000/api/auth/usuarios/${usuario._id}`);
         obtenerUsuarios();
       } catch (error) {
         setMensaje('Error al eliminar usuario');
