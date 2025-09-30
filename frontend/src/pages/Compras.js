@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
   import { FaSignOutAlt, FaPlus, FaSearch } from 'react-icons/fa';
   import 'bootstrap/dist/css/bootstrap.min.css';
   import axios from 'axios';
+  import { API_URL } from '../config';
   // XLSX no longer used; Excel export via exceljs with dynamic import
   import jsPDF from 'jspdf';
   import autoTable from 'jspdf-autotable';
@@ -10,14 +11,13 @@ import React, { useState, useEffect } from 'react';
   import '../compras.css';
   
 
-  import { MODALIDADES, CAMPOS_MODALIDAD, COLUMNAS_TABLA } from '../utils/constantes';
-  import Filtros from '../components/components_pag_compras/Filtros';
-  import ModalExpediente from '../components/components_pag_compras/ModalExpediente';
-  import ModalReporte from '../components/components_pag_compras/ModalReporte';
-  import TablaExpedientes from '../components/components_pag_compras/TablaExpedientes';
-  import ModalTraslado from '../components/ModalTraslado';
-
-  const Compras = () => {
+import { MODALIDADES, CAMPOS_MODALIDAD, COLUMNAS_TABLA } from '../utils/constantes';
+import Filtros from '../components/components_pag_compras/Filtros';
+import ModalExpediente from '../components/components_pag_compras/ModalExpediente';
+import ModalReporte from '../components/components_pag_compras/ModalReporte';
+import ModalImportarExcel from '../components/components_pag_compras/ModalImportarExcel';
+import TablaExpedientes from '../components/components_pag_compras/TablaExpedientes';
+import ModalTraslado from '../components/ModalTraslado';  const Compras = () => {
   const navigate = useNavigate();
 
   // Protección por rol
@@ -40,16 +40,15 @@ import React, { useState, useEffect } from 'react';
     const [showReporte, setShowReporte] = useState(false);
   const [camposReporte, setCamposReporte] = useState([]);
   const allSelected = camposReporte.length > 0 && COLUMNAS_TABLA[modalidad]?.every(c => camposReporte.includes(c.name));
-    const [showTraslado, setShowTraslado] = useState(false);
-    const [showMensaje, setShowMensaje] = useState(false);
-    const [expedienteTraslado, setExpedienteTraslado] = useState(null);
-  // Buscador general
-  const [busqueda, setBusqueda] = useState("");
-
-    useEffect(() => {
+  const [showTraslado, setShowTraslado] = useState(false);
+  const [showMensaje, setShowMensaje] = useState(false);
+  const [expedienteTraslado, setExpedienteTraslado] = useState(null);
+  const [showImportarExcel, setShowImportarExcel] = useState(false);
+// Buscador general
+const [busqueda, setBusqueda] = useState("");    useEffect(() => {
       const fetchExpedientes = async () => {
         try {
-          const res = await axios.get('http://localhost:5000/api/expedientes');
+          const res = await axios.get(`${API_URL}/api/expedientes`);
           setRows(res.data); // Carga todos los expedientes
         } catch (err) {
           setRows([]);
@@ -107,7 +106,7 @@ import React, { useState, useEffect } from 'react';
       setMensaje('');
       try {
         if (editando && expedienteId) {
-          await axios.put(`http://localhost:5000/api/expedientes/${expedienteId}`, {
+          await axios.put(`${API_URL}/api/expedientes/${expedienteId}`, {
             ...form,
             modalidad: MODALIDADES.find(m => m.key === modalidad).label
           });
@@ -117,7 +116,7 @@ import React, { useState, useEffect } from 'react';
           setEditando(false);
           setExpedienteId(null);
         } else {
-          await axios.post('http://localhost:5000/api/expedientes', {
+          await axios.post(`${API_URL}/api/expedientes`, {
             ...form,
             modalidad: MODALIDADES.find(m => m.key === modalidad).label
           });
@@ -149,6 +148,54 @@ import React, { useState, useEffect } from 'react';
       }
     };
 
+    // Función para manejar la importación desde Excel
+    const handleImportarExcel = () => {
+      setShowImportarExcel(true);
+    };
+
+    const handleConfirmarImportacion = async (datosImportados) => {
+      if (!datosImportados || datosImportados.length === 0) {
+        setMensaje('No hay datos para importar');
+        setShowMensaje(true);
+        return;
+      }
+
+      setMensaje('');
+      try {
+        // Guardar cada registro individualmente
+        let exitosos = 0;
+        let errores = 0;
+
+        for (const registro of datosImportados) {
+          try {
+            await axios.post(`${API_URL}/api/expedientes`, registro);
+            exitosos++;
+          } catch (err) {
+            errores++;
+            console.error('Error al importar registro:', err);
+          }
+        }
+
+        if (exitosos > 0) {
+          setMensaje(`Importación completada: ${exitosos} registros guardados${errores > 0 ? `, ${errores} errores` : ''}.`);
+          setShowMensaje(true);
+          
+          // Recargar los datos
+          const res = await axios.get(`${API_URL}/api/expedientes`);
+          setRows(res.data);
+        } else {
+          setMensaje('Error: No se pudo guardar ningún registro');
+          setShowMensaje(true);
+        }
+      } catch (err) {
+        setMensaje('Error durante la importación masiva');
+        setShowMensaje(true);
+        console.error(err);
+      }
+      
+      setShowImportarExcel(false);
+    };
+
     const handleModificar = (row) => {
       // Suponiendo que expediente es el objeto a editar
       const expedienteEdit = { ...row };
@@ -167,7 +214,7 @@ import React, { useState, useEffect } from 'react';
     const handleEliminar = async (row) => {
       if (window.confirm('¿Está seguro que desea eliminar este expediente?')) {
         try {
-          await axios.delete(`http://localhost:5000/api/expedientes/${row._id}`);
+          await axios.delete(`${API_URL}/api/expedientes/${row._id}`);
           setRows(prevRows => prevRows.filter(r => r._id !== row._id));
         } catch (err) {
           alert('Error al eliminar el expediente');
@@ -474,7 +521,7 @@ import React, { useState, useEffect } from 'react';
       if (!expedienteTraslado) return;
       try {
         const res = await axios.put(
-          `http://localhost:5000/api/expedientes/trasladar/${expedienteTraslado._id}`,
+          `${API_URL}/api/expedientes/trasladar/${expedienteTraslado._id}`,
           { area }
         );
         setRows(rows => rows.map(r => r._id === res.data._id ? res.data : r));
@@ -544,6 +591,9 @@ import React, { useState, useEffect } from 'react';
             <button className="btn btn-primary fw-bold me-3 btn-lg px-4 py-1" onClick={handleRegistrar}>
               <FaPlus className="me-2" /> REGISTRAR
             </button>
+            <button className="btn btn-success fw-bold me-3 btn-lg px-4 py-1" onClick={handleImportarExcel}>
+              📥 IMPORTAR EXCEL
+            </button>
             <button className="btn btn-secondary fw-bold btn-lg px-4 py-1" onClick={handleReporte}>
               📄 REPORTES
             </button>
@@ -581,6 +631,15 @@ import React, { useState, useEffect } from 'react';
           onModalidadFiltroChange={onModalidadFiltroChange}
           handleExportExcel={handleExportExcel}
           handleExportPDF={handleExportPDF}
+        />
+
+        {/* Modal para importar desde Excel */}
+        <ModalImportarExcel
+          show={showImportarExcel}
+          onHide={() => setShowImportarExcel(false)}
+          modalidad={modalidad}
+          camposModalidad={CAMPOS_MODALIDAD[modalidad]}
+          onImportar={handleConfirmarImportacion}
         />
 
         {/* Tabla dinámica */}

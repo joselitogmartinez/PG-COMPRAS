@@ -1,6 +1,6 @@
 [build]
   base = "frontend"
-  publish = "build"
+  publish = "build" # CRA genera build/
   command = "npm ci && npm run build"
 
 [[redirects]]
@@ -11,4 +11,4 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Cache-Control = "no-cache"
+  Cache-Control = "no-cache"

@@ -1,4 +1,22 @@
 # PG-COMPRAS — Guía de Despliegue en Render
+# PG-COMPRAS
+
+## Despliegue rápido en Netlify
+
+Frontend (React CRA) vive en `frontend/`. Ya hay un `netlify.toml` que:
+- Usa `frontend` como base, ejecuta `npm run build` y publica `frontend/build`.
+- Incluye redirect SPA `/* -> /index.html`.
+
+Variables de entorno necesarias en Netlify (Site settings > Build & deploy > Environment):
+- `REACT_APP_API_URL` = URL pública del backend (ej. https://mi-api.onrender.com)
+
+Backend CORS: establecer env en el backend
+- `FRONTEND_ORIGIN` = URL del sitio Netlify (ej. https://mi-sitio.netlify.app)
+
+Pasos:
+1. Importar el repo en Netlify: Add new site > Import from Git.
+2. Base directory: `frontend` | Build command: `npm run build` | Publish directory: `build`.
+3. Configurar `REACT_APP_API_URL` y desplegar.
 
 Este proyecto está preparado para desplegarse en Render usando un Blueprint (render.yaml) con dos servicios:
 - Backend (Node + Express + MongoDB)

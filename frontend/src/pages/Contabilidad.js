@@ -16,7 +16,7 @@ const COLUMNAS_CONTABILIDAD = [
   { name: 'proveedor', label: 'Proveedor' },
   { name: 'producto', label: 'Producto' },
   { name: 'cantidad_adjudicada', label: 'Cantidad Adjudicada' },
-  { name: 'monto_total', label: 'Monto Total' },
+  { name: 'monto_total', label: 'Monto Total' },  
   { name: 'factura_numero', label: 'No. Factura' },
   { name: 'cur_numero', label: 'No. CUR' },
   { name: 'cur_aprobado', label: 'CUR Aprobado' },

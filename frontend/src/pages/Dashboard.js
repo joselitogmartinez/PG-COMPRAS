@@ -40,7 +40,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     let mounted = true;
-    const fetchExpedientes = async () => {
+  const fetchExpedientes = async () => {
       try {
   const res = await axios.get('http://localhost:5000/api/expedientes');
         if (mounted) setExpedientes(res.data);

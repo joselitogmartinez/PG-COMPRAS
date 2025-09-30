@@ -151,6 +151,13 @@ const TablaExpedientesAreas = ({
                           extraClass = 'celda-roja-cur';
                         }
                       }
+                      if (idx === 0 && row.original.areaActual === 'CONTABILIDAD') {
+                        if (row.original.cur_devengado && row.original.cur_devengado !== '') {
+                          extraClass = 'celda-verde-cur';
+                        } else {
+                          extraClass = 'celda-roja-cur';
+                        }
+                      }
                       return (
                         <td key={cell.id} className={extraClass}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

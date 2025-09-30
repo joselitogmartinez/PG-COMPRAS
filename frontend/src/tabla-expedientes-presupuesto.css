@@ -121,10 +121,6 @@
   font-weight: bold;
 }
 
-
-
-/* ...existing code... */
-
 /* Scrollbar horizontal con flechitas en presupuesto */
 .tabla-expedientes-presupuesto-contenedor::-webkit-scrollbar {
   width: 18px;
