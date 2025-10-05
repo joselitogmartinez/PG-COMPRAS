@@ -8,7 +8,7 @@ async function responderPregunta(pregunta) {
   // Ejemplo de reglas simples
   if (pregunta.toLowerCase().includes('total de montos')) {
     const expedientes = await Expediente.find();
-    const total = expedientes.reduce((sum, exp) => sum + (exp.monto || 0), 0);
+    const total = expedientes.reduce((sum, exp) => sum + (exp.monto_total || 0), 0);
     return `El total de montos es Q${total.toLocaleString()}`;
   }
 

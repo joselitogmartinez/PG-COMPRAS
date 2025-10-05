@@ -24,7 +24,11 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:selenium": "mocha tests/selenium/**/*.test.js --timeout 120000"
+    "setup:test-users": "node scripts/create-test-users.js",
+    "test:selenium": "npm run setup:test-users && mocha tests/selenium/**/*.test.js --timeout 120000",
+    "test:e2e:auth": "npm run setup:test-users && mocha tests/selenium/auth.e2e.test.js --timeout 120000",
+    "test:e2e:users": "npm run setup:test-users && mocha tests/selenium/users-modules.e2e.test.js --timeout 180000",
+    "test:e2e:all": "npm run setup:test-users && mocha tests/selenium/*.e2e.test.js --timeout 180000"
   },
   "keywords": [],
   "author": "",
